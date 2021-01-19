@@ -1,6 +1,8 @@
 # quark-n
 quark-n的一些使用技巧
+
 wiki: https://wiki.seeedstudio.com/cn/Quantum-Mini-Linux-Development-Kit/
+
 大神项目地址：https://github.com/peng-zhihui/Project-Quantum
 
 1. 启动网络
