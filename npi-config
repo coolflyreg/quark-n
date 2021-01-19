@@ -1,0 +1,1325 @@
+#!/bin/bash
+# Part of npi-config http://github.com/friendlyarm/npi-config
+#
+# See LICENSE file for copyright and license details
+
+INTERACTIVE=True
+ASK_TO_REBOOT=0
+
+if [ -f /etc/friendlyelec-release ]; then
+  # get friendlyelec's boardt model
+  # example: 
+  # BOARD="NanoPC-T2"
+  # LINUXFAMILY=nanopi2
+  . /etc/friendlyelec-release                       
+else
+    echo "Not found /etc/friendlyelec-release, Unable to determine the board model."
+    echo "Unsupported OS.Please use FriendlyCore."
+    exit 1
+fi
+KERN_VERSION=`uname -r`
+BOARD_LC=$(echo $BOARD|tr '[:upper:]' '[:lower:]')
+DTB="none"
+DTB_R=/sys/firmware/fdt
+is_allwinner_mainline_kernel() {
+  IS_ALLWINNER_M=0
+  if [ "x${LINUXFAMILY}" = "xAllwinnersun50iw2Family" ]; then
+    IS_ALLWINNER_M=1
+    DTB_W=/boot/sun50i-h5-${BOARD_LC}.dtb
+  elif [ "x${LINUXFAMILY}" = "xsun8i" ]; then
+    IS_ALLWINNER_M=1
+    DTB_W=/boot/sun8i-h3-${BOARD_LC}.dtb
+    if [ "x${BOARD_LC}" = "xnanopi-duo" ]; then
+      DTB_W=/boot/sun8i-h2-plus-${BOARD_LC}.dtb
+    fi
+  else
+    return 1
+  fi
+}
+
+get_init_sys() {
+  if command -v systemctl > /dev/null && systemctl | grep -q '\-\.mount'; then
+    SYSTEMD=1
+  elif [ -f /etc/init.d/cron ] && [ ! -h /etc/init.d/cron ]; then
+    SYSTEMD=0
+  else
+    echo "Unrecognised init system"
+    return 1
+  fi
+}
+
+calc_wt_size() {
+  # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
+  # output from tput. However in this case, tput detects neither stdout or 
+  # stderr is a tty and so only gives default 80, 24 values
+  WT_HEIGHT=17
+  WT_WIDTH=$(tput cols)
+
+  if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
+    WT_WIDTH=80
+  fi
+  if [ "$WT_WIDTH" -gt 178 ]; then
+    WT_WIDTH=120
+  fi
+  WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
+}
+
+#
+# begin
+# turn-wifi-into-apmode shell functions
+#
+
+FA_RunCmd() {
+  [ "$V" = "1" ] && echo "+ ${@}"
+  eval $@ || return $?
+}
+
+
+emptyfile() {
+  rm -f $1
+  touch $1
+  chmod $2 $1
+  chown root:root $1
+}
+
+init_wifi_ap() {
+  echo "options bcmdhd op_mode=2" > /etc/modprobe.d/bcmdhd.conf
+  FA_RunCmd rmmod bcmdhd
+  sleep 1
+  cp -f /usr/share/network-conf/ap/interfaces /etc/network/interfaces
+  cp -f /usr/share/network-conf/ap/hostapd_new.conf /etc/hostapd/hostapd.conf
+  FA_RunCmd modprobe bcmdhd op_mode=2
+  sleep 2
+  return 0
+}
+
+init_wifi_net() {
+  echo "options bcmdhd op_mode=5" > /etc/modprobe.d/bcmdhd.conf
+  FA_RunCmd rmmod bcmdhd
+  sleep 1
+  cp -f /usr/share/network-conf/sta/interfaces /etc/network/interfaces
+  rm -f /etc/hostapd/hostapd.conf
+  FA_RunCmd modprobe bcmdhd
+  sleep 3
+  return 0
+}
+
+APSSID=""
+APPASSWORD=""
+APPASSWORD2=""
+
+pre_apmode() {
+  APSSID=$(whiptail --inputbox "Enter Hotspot name (SSID)" 20 60 "friendlyelec-wifiap" 3>&1 1>&2 2>&3)
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+  
+  if [ -z "$APSSID" ]; then
+      whiptail --msgbox "Hotspot name cannot be blank." 20 60 1                                
+      return 1
+  fi
+
+  if [ ${#APSSID} -le 3 ]; then   
+      whiptail --msgbox "Hotspot name is too short." 20 60 1                                
+      return 1
+  fi
+
+  APPASSWORD=$(whiptail --inputbox "Enter password (9 characters long)" 20 60 "123456789" 3>&1 1>&2 2>&3)
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  if [ -z "${APPASSWORD}" ]; then
+    whiptail --msgbox "Password cannot be blank." 20 60 1                                
+    return 1
+  fi
+
+  if [ ${#APPASSWORD} -le 8 ]; then
+    whiptail --msgbox "Password is too short, 9 characters long is better." 20 60 1
+    return 1                                                                       
+  fi
+
+  APPASSWORD2=$(whiptail --inputbox "Enter password again" 20 60 "123456789" 3>&1 1>&2 2>&3)
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  if [ -z "${APPASSWORD2}" ]; then
+    whiptail --msgbox "Password2 cannot be blank." 20 60 1
+    return 1 
+  fi
+
+  if [ x"${APPASSWORD}" = x"${APPASSWORD2}" ]; then
+    cp -f /usr/share/network-conf/ap/hostapd.conf /usr/share/network-conf/ap/hostapd_new.conf
+    sed -i "s/^ssid=.*/ssid=$APSSID/g" /usr/share/network-conf/ap/hostapd_new.conf
+    sed -i "s/^wpa_passphrase.*/wpa_passphrase="${APPASSWORD}"/g" /usr/share/network-conf/ap/hostapd_new.conf
+  else
+    whiptail --msgbox "The two password didn't match." 20 60 1
+    return 1
+  fi
+  return 0
+}
+
+end_apmode() {
+    whiptail --msgbox "Configuration Saved!\nYou can connect your computer to this board now, \nhotspot detail:\n\nWireless Name: $APSSID\nPassword: $APPASSWORD\n\n"  20 60 1
+}
+
+switch_apmode() {
+  pre_apmode
+  if [ $? -ne 0 ]; then
+    return 0
+  fi
+
+  FA_RunCmd ifdown wlan0
+  sleep 1
+  FA_RunCmd ifconfig wlan0 down
+  init_wifi_ap
+  FA_RunCmd systemctl stop dnsmasq
+  FA_RunCmd systemctl stop hostapd
+  FA_RunCmd systemctl stop udhcpd.service
+  FA_RunCmd systemctl enable udhcpd.service
+  FA_RunCmd systemctl enable dnsmasq
+  FA_RunCmd systemctl enable hostapd
+  sed -i 's/DHCPD_ENABLED="no"/DHCPD_ENABLED="yes"/g' /etc/default/udhcpd
+  if [ -f /etc/wicd/wireless-settings.conf ]; then
+    cp /etc/wicd/wireless-settings.conf /etc/wicd/wireless-settings.conf.bak
+    emptyfile /etc/wicd/wireless-settings.conf 600
+  fi
+  if [ -f /etc/network/interfaces.d/wlan0 ]; then
+  cp /etc/network/interfaces.d/wlan0 /etc/wlan0-bak
+  rm /etc/network/interfaces.d/wlan0
+  fi
+  FA_RunCmd systemctl start udhcpd.service
+  FA_RunCmd systemctl start dnsmasq
+  FA_RunCmd systemctl start hostapd
+  FA_RunCmd /sbin/ifconfig wlan0 192.168.8.1 up
+  end_apmode
+  return 0
+}
+
+exit_apmode() {
+    FA_RunCmd ifdown wlan0
+    sleep 1
+    FA_RunCmd ifconfig wlan0 down
+    FA_RunCmd systemctl stop dnsmasq
+    FA_RunCmd systemctl stop hostapd
+    FA_RunCmd systemctl stop udhcpd.service
+    FA_RunCmd systemctl disable dnsmasq
+    FA_RunCmd systemctl disable hostapd
+    FA_RunCmd systemctl disable udhcpd.service
+    sed -i 's/DHCPD_ENABLED="yes"/DHCPD_ENABLED="no"/g' /etc/default/udhcpd
+    init_wifi_net
+    sleep 2
+    return 0
+}
+
+#
+# end
+#
+
+
+
+do_about() {
+  whiptail --msgbox "\
+npi-config (v1.1.2)\n
+This tool provides a straight-forward way of doing initial
+configuration of the NanoPi. Although it can be run
+at any time, some of the options may have difficulties if
+you have heavily customised your installation.\n\n
+Currnet Model: ${BOARD}
+Kernel Version: ${KERN_VERSION}\
+" 20 70 1
+  return 0
+}
+
+do_change_pass() {
+  id -u pi
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    whiptail --msgbox "You will now be asked to enter a new password for the pi user" 20 60 1
+    passwd pi &&
+    whiptail --msgbox "Password changed successfully" 20 60 1
+    return 0
+  fi
+
+  id -u fa
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    whiptail --msgbox "You will now be asked to enter a new password for the fa user" 20 60 1
+    passwd fa &&
+    whiptail --msgbox "Password changed successfully" 20 60 1
+    return 0
+  fi
+}
+
+do_configure_keyboard() {
+  dpkg-reconfigure keyboard-configuration &&
+  printf "Reloading keymap. This may take a short while\n" &&
+  invoke-rc.d keyboard-setup start
+}
+
+do_change_locale() {
+  dpkg-reconfigure locales
+  ASK_TO_REBOOT=1
+}
+
+do_change_timezone() {
+  dpkg-reconfigure tzdata
+}
+
+get_wifi_country() {
+   grep country= /etc/wpa_supplicant/wpa_supplicant.conf | cut -d "=" -f 2
+}
+
+do_wifi_country() {
+  oIFS="$IFS"
+  if [ "$INTERACTIVE" = True ]; then
+    IFS="/"
+    value=$(cat /usr/share/zoneinfo/iso3166.tab | tail -n +26 | tr '\t' '/' | tr '\n' '/')
+    COUNTRY=$(whiptail --menu "Select the country in which the Pi is to be used" 20 60 10 ${value} 3>&1 1>&2 2>&3)
+  else
+    COUNTRY=$1
+    true
+  fi
+  if [ $? -eq 0 ];then
+    if [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+        if grep -q "^country=" /etc/wpa_supplicant/wpa_supplicant.conf ; then
+            sed -i "s/^country=.*/country=$COUNTRY/g" /etc/wpa_supplicant/wpa_supplicant.conf
+        else
+            sed -i "1i country=$COUNTRY" /etc/wpa_supplicant/wpa_supplicant.conf
+        fi
+    else
+        echo "country=$COUNTRY" > /etc/wpa_supplicant/wpa_supplicant.conf
+    fi
+    if [ "$INTERACTIVE" = True ]; then
+        whiptail --msgbox "Wi-fi country set to $COUNTRY" 20 60 1
+    fi
+    ASK_TO_REBOOT=1
+  fi
+  IFS=$oIFS
+}
+
+do_change_hostname() {
+  whiptail --msgbox "\
+Please note: RFCs mandate that a hostname's labels \
+may contain only the ASCII letters 'a' through 'z' (case-insensitive), 
+the digits '0' through '9', and the hyphen.
+Hostname labels cannot begin or end with a hyphen. 
+No other symbols, punctuation characters, or blank spaces are permitted.\
+" 20 70 1
+
+  CURRENT_HOSTNAME=`cat /etc/hostname | tr -d " \t\n\r"`
+  NEW_HOSTNAME=$(whiptail --inputbox "Please enter a hostname" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+  if [ $? -eq 0 ]; then
+    echo $NEW_HOSTNAME > /etc/hostname
+    sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
+    ASK_TO_REBOOT=1
+  fi
+}
+
+do_ssh() {
+  if [ -e /var/log/regen_ssh_keys.log ] && ! grep -q "^finished" /var/log/regen_ssh_keys.log; then
+    whiptail --msgbox "Initial ssh key generation still running. Please wait and try again." 20 60 2
+    return 1
+  fi
+  DEFAULT=--defaultno
+  if [ $(get_ssh) -eq 0 ]; then
+    DEFAULT=
+  fi
+  if [ "$INTERACTIVE" = True ]; then
+    whiptail --yesno "Would you like the SSH server to be enabled?" $DEFAULT 20 60 2
+    RET=$?
+  else
+    RET=$1
+  fi
+  if [ $RET -eq 0 ]; then
+    update-rc.d ssh enable &&
+    invoke-rc.d ssh start &&
+    STATUS=enabled
+  elif [ $RET -eq 1 ]; then
+    update-rc.d ssh disable &&
+    invoke-rc.d ssh stop &&
+    STATUS=disabled
+  else
+    return $RET
+  fi
+  if [ "$INTERACTIVE" = True ]; then
+    whiptail --msgbox "The SSH server is $STATUS" 20 60 1
+  fi
+}
+
+do_console() {
+  sed /etc/systemd/system/getty@tty1.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\) --autologin pi/\1/g"
+  sed /etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\) --autologin pi/\1/g"
+  sed /etc/systemd/system/serial-getty@ttyAMA0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\) --autologin pi/\1/g"
+  sed /etc/systemd/system/serial-getty@ttySAC0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\) --autologin pi/\1/g"
+}
+
+do_autologin_console() {
+  do_console
+
+  sed /etc/systemd/system/getty@tty1.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\)/\1 --autologin pi/g"
+  sed /etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\)/\1 --autologin pi/g"
+  sed /etc/systemd/system/serial-getty@ttyAMA0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\)/\1 --autologin pi/g"
+  sed /etc/systemd/system/serial-getty@ttySAC0.service.d/autologin.conf -i -e "s/\(^ExecStart.*agetty\)/\1 --autologin pi/g"
+}
+
+do_qte() {
+  whiptail --yesno "Would you like the Qt/E Demo enabled or disabled?" 20 60 2 \
+    --yes-button Enable --no-button Disable
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    sed /etc/rc.local -i -e "s/^#\(.*\)\/opt\/QtE-Demo\/run.sh/\1\/opt\/QtE-Demo\/run.sh/g"
+    rm /etc/systemd/system/getty.target.wants/getty@tty1.service
+    ln -s /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty2.service
+    whiptail --msgbox "Qt/E Demo enabled" 20 60 1
+  elif [ $RET -eq 1 ]; then
+    sed /etc/rc.local -i -e "s/\(.*\)\/opt\/QtE-Demo\/run.sh/#\1\/opt\/QtE-Demo\/run.sh/g"
+    rm /etc/systemd/system/getty.target.wants/getty@tty2.service
+    ln -s /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+    whiptail --msgbox "Qt/E Demo disabled" 20 60 1
+  else
+    return $RET
+  fi
+}
+
+get_boot_wait() {
+  if test -e /etc/systemd/system/dhcpcd.service.d/wait.conf; then
+    echo 0
+  else
+    echo 1
+  fi
+}
+
+do_boot_wait() {
+  get_init_sys
+  if [ $SYSTEMD -eq 0 ]; then
+    whiptail --msgbox "This option can only be selected when using systemd" 20 60 2
+    return 1
+  fi
+
+  DEFAULT=--defaultno
+  if [ $(get_boot_wait) -eq 0 ]; then
+    DEFAULT=
+  fi
+  if [ "$INTERACTIVE" = True ]; then
+    whiptail --yesno "Would you like boot to wait until a network connection is established?" $DEFAULT 20 60 2
+    RET=$?
+  else
+    RET=$1
+  fi
+  if [ $RET -eq 0 ]; then
+    mkdir -p /etc/systemd/system/dhcpcd.service.d/
+    cat > /etc/systemd/system/dhcpcd.service.d/wait.conf << EOF
+[Service]
+ExecStart=
+ExecStart=/sbin/dhcpcd -q -w
+EOF
+    STATUS=enabled
+  elif [ $RET -eq 1 ]; then
+    rm -f /etc/systemd/system/dhcpcd.service.d/wait.conf
+    STATUS=disabled
+  else
+    return $RET
+  fi
+  if [ "$INTERACTIVE" = True ]; then
+    whiptail --msgbox "Waiting for network on boot is $STATUS" 20 60 1
+  fi
+}
+
+do_set_boot_from_tf_env() {
+  (cd /boot && {\
+    sed -i 's/ root=\/dev\/[^ ]* / root=\/dev\/mmcblk0p2 /g' boot.cmd; \
+    sed -i 's/ data=\/dev\/[^ ]*/ data=\/dev\/mmcblk0p3/g' boot.cmd; \
+    mkimage -C none -A arm -T script -d boot.cmd boot.scr; \
+  })
+  ASK_TO_REBOOT=1;
+  whiptail --msgbox "${BOARD} should boot from TF card next time you reboot the board." 20 60 1
+}
+
+do_set_boot_from_hd_env() {
+  (cd /boot && {\
+    sed -i 's/ root=\/dev\/[^ ]* / root=\/dev\/sda1 /g' boot.cmd; \
+    mkimage -C none -A arm -T script -d boot.cmd boot.scr; \
+  })
+  ASK_TO_REBOOT=1
+  whiptail --msgbox "${BOARD} should boot from hard drive next time you reboot the board." 20 60 1
+}
+
+do_set_boot_from_emmc_env() {
+  (cd /boot && {\
+    sed -i 's/ root=\/dev\/[^ ]* / root=\/dev\/mmcblk1p2 /g' boot.cmd; \
+    sed -i 's/ data=\/dev\/[^ ]*/ data=\/dev\/mmcblk1p3/g' boot.cmd; \
+    mkimage -C none -A arm -T script -d boot.cmd boot.scr; \
+  })
+  ASK_TO_REBOOT=1
+  whiptail --msgbox "${BOARD} should boot from emmc next time you reboot the board." 20 60 1
+}
+
+do_boot_from_tf() {
+  grep 'root=\/dev\/mmcblk0p2' /proc/cmdline 2>&1 > /dev/null
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    whiptail --msgbox "The current setting is this one." 20 60 2
+    return 0
+  fi
+  do_set_boot_from_tf_env
+}
+
+do_boot_from_emmc() {
+  grep 'root=\/dev\/mmcblk1p2' /proc/cmdline 2>&1 > /dev/null
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    whiptail --msgbox "The current setting is this one." 20 60 2
+    return 0
+  fi
+  do_set_boot_from_emmc_env
+}
+
+do_boot_from_hd() {
+    grep 'root=\/dev\/sda1' /proc/cmdline 2>&1 > /dev/null
+    RET=$?
+    if [ $RET -eq 0 ]; then
+      whiptail --msgbox "The current setting is this one." 20 60 2
+      return 0
+    fi
+
+    is_allwinner_mainline_kernel
+    if [ $IS_ALLWINNER_M -eq 0 ]; then
+      whiptail --msgbox "Only allwinner boards with mainline kernel support this option." 20 60 2
+      return 0
+    fi
+
+    if [ ! -e /dev/sda ]; then
+      whiptail --msgbox "No hard disk device was found." 20 60 2
+      return 0
+    fi
+
+    HAS_SYS_ON_HD=0
+    if [ -e /dev/sda1 ]; then
+      mount | grep /dev/sda1 2>&1 > /dev/null
+      RET=$?
+      if [ $RET -eq 0 ]; then
+        umount /dev/sda1
+      fi
+      mkdir -p /tmp/sda1
+      mount /dev/sda1 /tmp/sda1
+      RET=$?
+      if [ $RET -eq 0 ]; then
+        if [ -d /tmp/sda1/etc -a -d /tmp/sda1/usr/bin ]; then
+          HAS_SYS_ON_HD=1
+        fi
+        umount /dev/sda1
+        rm -rf /tmp/sda1
+      fi
+    fi
+
+    NEED_REBUILD=0
+    if [ $HAS_SYS_ON_HD -eq 1 ]; then 
+      whiptail --yesno "Found existing system on /dev/sda1, would you like to use it?" 20 60 2
+      RET=$?
+      if [ $RET -eq 0 ]; then # yes
+        # use system on /dev/sda1
+        NEED_REBUILD=0
+      else
+        NEED_REBUILD=1
+      fi
+    else
+      NEED_REBUILD=1
+    fi
+
+    if [ $NEED_REBUILD -eq 1 ]; then
+        whiptail --yesno "WARNING: Now will create system for hard drive, it will erase all data on this disk, do you want to continue?" 20 60 2
+        RET=$?
+        if [ $RET -eq 0 ]; then
+          # remove all partition
+          dd if=/dev/zero of=/dev/sda bs=512 count=1 conv=notrunc
+          # add a partition and format
+          fdisk /dev/sda << FDISKEOF
+n
+p
+1
+
+
+w
+FDISKEOF
+          yes | mkfs.ext4 /dev/sda1
+          mkdir -p /diskmount
+          mount /dev/sda1 /diskmount
+
+          echo "Copying rootfs from TF card to Hard drive, please wait ..."
+          find /* -maxdepth 0 | \
+           grep -v "/diskmount" | \
+           grep -v "/proc" | \
+           grep -v "/sys" | \
+           xargs cp -af --target-directory=/diskmount
+
+          mkdir /diskmount/proc
+          chmod 0555 /diskmount/proc
+          chown root:root /diskmount/proc
+
+          mkdir /diskmount/sys
+          chmod 0555 /diskmount/sys
+          chown root:root /diskmount/sys
+
+          umount /dev/sda1
+          rm -rf /diskmount
+        else
+          # use cancel, do nothing
+          return 0
+        fi
+    fi
+
+    do_set_boot_from_hd_env
+    return 0
+}
+
+do_boot_device() {
+  is_allwinner_mainline_kernel
+  if [ $IS_ALLWINNER_M -eq 0 ]; then
+    whiptail --msgbox "Only allwinner boards with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+
+  if [ ! -e /dev/sda ]; then
+    if [ ! -e /dev/mmcblk1 ]; then
+      whiptail --msgbox "No other storage device was found." 20 60 2
+      return 0
+    fi
+  fi
+
+  BOOTOPT=$(whiptail --menu "Choose boot device" 20 60 10 \
+      "D1 Hard drive" "Load the root filesystem from SSD/HD/Usbdisk" \
+      "D2 TF card" "Load the root filesystem from TF card" \
+      "D3 emmc" "Load the root filesystem from emmc" \
+    3>&1 1>&2 2>&3)
+  if [ $? -eq 0 ]; then
+    case "$BOOTOPT" in
+      D1*) do_boot_from_hd ;;
+      D2*) do_boot_from_tf ;;
+      D3*) do_boot_from_emmc ;;
+      *)
+        whiptail --msgbox "Programmer error, unrecognised boot option" 20 60 2
+        return 1
+        ;;
+    esac
+  fi
+}
+
+do_boot_behaviour() {
+
+  # if [ ! -d "/opt/QtE-Demo" ]; then
+  #  whiptail --msgbox "This OS is't UbuntuCore with QtE, I don't know how to configure." 20 60 2
+  #  return 0
+  # fi
+  # "Qt/Embedded" "Graphical UI, display system info" \
+  B1_STATUS="disabled"
+  B2_STATUS="disabled"
+  B3_STATUS="disabled"
+  AUTOLOGIN_CONF=/etc/systemd/system/getty@tty1.service.d/autologin.conf
+  if grep autologin ${AUTOLOGIN_CONF}>/dev/null;  then
+    B2_STATUS="enabled"
+  else
+    B1_STATUS="enabled"
+  fi
+  if ! grep QtE-Demo /etc/rc.local | grep "#">/dev/null; then
+    B3_STATUS="enabled"
+  fi
+  BOOTOPT=$(whiptail --menu "Chose boot option" 20 60 10 \
+      "B1 Console" "Text console, requiring user to login[${B1_STATUS}]" \
+      "B2 Console Autologin" "Text console, automatically logged in as 'pi' user[${B2_STATUS}]" \
+      "B3 Qt/Embedded" "Disable or enable Qt/E demo auto startup[${B3_STATUS}]" \
+    3>&1 1>&2 2>&3)
+  if [ $? -eq 0 ]; then
+    case "$BOOTOPT" in
+      B1*) do_console ;;
+      B2*) do_autologin_console ;;
+      B3*) do_qte ;;
+      *)
+        whiptail --msgbox "Programmer error, unrecognised boot option" 20 60 2
+        return 1
+        ;;
+    esac
+    ASK_TO_REBOOT=1
+  fi
+}
+
+# Select system default audio device, only support onboard-codec/HDMI-audio.
+do_audio() {
+  is_allwinner_mainline_kernel
+  if [ $IS_ALLWINNER_M -eq 0 ]; then
+    whiptail --msgbox "Only allwinner boards with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+  
+  local cardnum=0
+  SOUND_DIR=/proc/asound/
+  for dev in `ls ${SOUND_DIR} | grep -E "card[0-9]"`; do
+    local index=`echo ${dev} | grep -oE [0-9]`
+    local card[${index}]=${dev}
+    local card_desc[${index}]=`aplay -l | grep "card ${index}" | head -n 1 | cut -d ":" -f 2-3 | cut -d " " -f 3- | cut -d "[" -f -2`
+    if [ -z "${card_desc[${index}]}" ]; then
+      card_desc[${index}]="soundcard${index}"
+    fi
+    cardnum=$((cardnum + 1))
+  done
+  local selected_audio="unknown"
+
+  if [ -z "$1" ]; then
+    cur_audio="`grep -o "card [0-9]" /etc/asound.conf | head -n 1 | grep -o [0-9]`"
+    card_desc[${cur_audio}]=${card_desc[${cur_audio}]}"(X)"
+
+    # max soundcard number: 5
+    selected_audio=$(whiptail --menu "Choose the audio output" 20 60 10 \
+    "${card[0]}" "${card_desc[0]}" \
+    "${card[1]}" "${card_desc[1]}" \
+    "${card[2]}" "${card_desc[2]}" \
+    "${card[3]}" "${card_desc[3]}" \
+    "${card[4]}" "${card_desc[4]}" \
+    3>&1 1>&2 2>&3)
+  else
+    selected_audio=$1
+  fi
+
+  if [ ! -z "${selected_audio}" ]; then
+    if /usr/bin/select_audio.sh ${selected_audio} >/dev/null; then
+      whiptail --msgbox "Select ${selected_audio} as system default audio device OK." 20 60 1
+      # no need to reboot
+    else
+      whiptail --msgbox "Fail to select ${selected_audio} as system default audio device" 20 60 1
+    fi
+  fi
+}
+
+# Select system default audio device, only support onboard-codec/HDMI-audio.
+do_cpu_freq() {
+  is_allwinner_mainline_kernel
+  if [ $IS_ALLWINNER_M -eq 0 ]; then
+    whiptail --msgbox "Only allwinner H3 with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+  if ! grep sun8i -i /proc/cpuinfo; then
+    whiptail --msgbox "Only allwinner H3 with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+  freq_desc[1]="1008MHz"
+  freq_desc[2]="1200MHz"
+  cur_freq=`fdtget ${DTB_R} /cpus/cpu@0 operating-points | cut -d " " -f 1`
+  if [ "x${cur_freq}" = "x1008000" ];then
+    freq_desc[1]="1008MHz(X)"
+  else
+    freq_desc[2]="1200MHz(X)"
+  fi
+  selected_freq=$(whiptail --menu "Choose the highest frequency" 20 60 10 \
+    "1" "${freq_desc[1]}" \
+    "2" "${freq_desc[2]}" \
+    3>&1 1>&2 2>&3)
+  if [ -n "${selected_freq}" ];then
+    ASK_TO_REBOOT=1
+  fi
+  case ${selected_freq} in
+      "1") fdtput ${DTB_W} /cpus/cpu@0 operating-points 1008000 1300000 816000 1100000 624000 1100000 480000 1100000 312000 1100000 240000 1100000 120000 1100000] ;;
+      "2") fdtput ${DTB_W} /cpus/cpu@0 operating-points 1200000 1300000 816000 1100000 624000 1100000 480000 1100000 312000 1100000 240000 1100000 120000 1100000] ;;
+      *)
+        return 0
+        ;;
+  esac
+  return 0
+}
+
+do_set_up_wifi_hotspot() {
+  wlan=`ifconfig wlan0`
+  if [ $? -eq 0 ]; then
+      WIFI_MODE=$(whiptail --menu "Choose the WiFi mode" 20 60 10 \
+    "W0" "Run as Access point (AP mode)" \
+    "W1" "Run as Wireless LAN client (Station mode)" \
+    3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$WIFI_MODE" in
+        W0) switch_apmode ;;
+        W1) exit_apmode ;;
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+    fi
+  else
+    whiptail --msgbox "No WLAN devices found." 20 60 1
+  fi
+}
+
+do_finish() {
+  if [ $ASK_TO_REBOOT -eq 1 ]; then
+    whiptail --yesno "Would you like to reboot now?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+      sync
+      reboot
+    fi
+  fi
+  exit 0
+}
+
+#if [ "GET" = "${OPT_MEMORY_SPLIT:-}" ]; then
+#  set -u # Fail on unset variables
+#  get_current_memory_split
+#  echo $CURRENT_MEMSPLIT
+#  exit 0
+#fi
+
+# Everything else needs to be run as root
+if [ $(id -u) -ne 0 ]; then
+  printf "Script must be run as root. Try 'sudo npi-config'\n"
+  exit 1
+fi
+
+do_internationalisation_menu() {
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Internationalisation Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "I1 Change Locale" "Set up language and regional settings to match your location" \
+    "I2 Change Timezone" "Set up timezone to match your location" \
+    "I3 Change Keyboard Layout" "Set the keyboard layout to match your keyboard" \
+    "I4 Change Wi-fi Country" "Set the legal channels used in your country" \
+    3>&1 1>&2 2>&3)
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      I1\ *) do_change_locale ;;
+      I2\ *) do_change_timezone ;;
+      I3\ *) do_configure_keyboard ;;
+      I4\ *) do_wifi_country ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+
+do_connect_wifi() {
+  wlan=`ifconfig wlan0`
+  if [ $? -ne 0 ]; then
+    whiptail --msgbox "No WLAN devices found." 20 60 1
+    return 0
+  fi
+
+  if [ -f /sys/module/bcmdhd/parameters/op_mode ]; then
+    wifimod=`cat /sys/module/bcmdhd/parameters/op_mode`
+    if [ $wifimod -eq 2 ]; then 
+      whiptail --msgbox "The WiFi is working in AP mode, you need switch to station mode first." 20 60 1
+      do_set_up_wifi_hotspot
+      return 0
+    elif [ $wifimod -eq 5 ]; then
+      echo "station mode"
+    else
+      whiptail --msgbox "Unknow WiFi mode: ${wifimod}" 20 60 1
+      return 0
+    fi
+  else
+    whiptail --msgbox "Unsupported WiFi module." 20 60 1
+    return 0
+  fi
+
+  SSID=$(whiptail --inputbox "Enter network name (SSID)" 20 60 "" 3>&1 1>&2 2>&3)
+  if [ $? -ne 0 ]; then
+    return 0
+  fi
+  
+  if [ -z "$SSID" ]; then
+      whiptail --msgbox "Network name cannot be blank." 20 60 1                                
+      return 0
+  fi
+
+  if [ ${#SSID} -le 3 ]; then   
+      whiptail --msgbox "Network name is too short." 20 60 1                                
+      return 0
+  fi
+  
+  PASSWORD=$(whiptail --inputbox "Enter password (Network name: ${SSID})" 20 60 "" 3>&1 1>&2 2>&3)
+  if [ $? -ne 0 ]; then
+    return 0
+  fi
+
+  if [ -z "${PASSWORD}" ]; then
+      whiptail --msgbox "Password cannot be blank." 20 60 1                                
+      return 0
+  else
+    if [ ${#PASSWORD} -le 4 ]; then                                   
+        whiptail --msgbox "Password is too short." 20 60 1  
+        return 0                                              
+    fi
+
+    PASSWORD2=$(whiptail --inputbox "Enter password again (Network name: ${SSID})" 20 60 "" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+      return 0
+    fi
+
+    if [ -z "${PASSWORD2}" ]; then
+        whiptail --msgbox "Password cannot be blank." 20 60 1  
+        return 0
+    fi
+
+    if [ x"${PASSWORD}" = x"${PASSWORD2}" ]; then
+      cat >/etc/wpa_supplicant/wpa_supplicant.conf <<EOL
+update_config=1
+network={
+    ssid="${SSID}"
+    psk="${PASSWORD}"
+}
+EOL
+      whiptail --msgbox "Configuration saved, you may need to reboot device to apply these changes." 20 60 1 
+      ASK_TO_REBOOT=1
+    else
+        whiptail --msgbox "The two password didn't match. p1=${PASSWORD}, p2=${PASSWORD2}" 20 60 1  
+        return 0
+    fi
+  fi
+}
+
+do_wifi_menu() {
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Wireless settings" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "A1 Connect to a WiFi Network" "" \
+    "A2 Configure Wi-Fi hotspot" "" \
+    3>&1 1>&2 2>&3)
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      A1\ *) do_connect_wifi ;;
+      A2\ *) do_set_up_wifi_hotspot ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+
+do_welcome_message() {
+  whiptail --yesno "Would you like the welcome message enabled or disabled?" 20 60 2 \
+    --yes-button Enable --no-button Disable
+  RET=$?
+  if [ $RET -eq 0 ]; then
+    sed /etc/pam.d/sshd -i -e "s/^#\s*\(session.*pam_motd.so\)/\1/g"
+    sed /etc/pam.d/login -i -e "s/^#\s*\(session.*pam_motd.so\)/\1/g"
+    whiptail --msgbox "Welcome message enabled" 20 60 1
+  elif [ $RET -eq 1 ]; then
+    sed /etc/pam.d/sshd -i -e "s/^\s*\(session.*pam_motd.so\)/# \1/g"
+    sed /etc/pam.d/login -i -e "s/^\s*\(session.*pam_motd.so\)/# \1/g"
+    whiptail --msgbox "Welcome message disabled" 20 60 1
+  else
+    return $RET
+  fi
+}
+
+do_get_dtb_status() {
+  local NODE=$1
+  RET=`fdtget ${DTB_R} ${NODE} status`
+  if [ "x${RET}" = "xokay" ]; then
+    echo "enabled"
+  else
+    echo "disabled"
+  fi
+}
+
+do_select_spi0dev() {
+  local spidev0="spidev0.0"
+  local spidev1="spi-2.8'tft"
+  local spidev2="spi-flash"
+  local spidev0_desc="SPI0 char device"
+  local spidev1_desc="Matrix-2'8_SPI_Key_TFT"
+  local spidev2_desc="SPI0 flash"
+  local selected_dev="spidev0.0"  
+  local spidev0_status=`do_get_dtb_status spidev0 status`
+  local spidev1_status=`do_get_dtb_status pitft status`
+  local spidev2_status=`do_get_dtb_status spiflash status`
+
+  if [ "x${spidev0_status}" = "xenabled" ];then
+    spidev0_desc=${spidev0_desc}"(X)"
+  elif [ "x${spidev1_status}" = "xenabled" ];then
+    spidev1_desc=${spidev1_desc}"(X)"
+  elif [ "x${spidev2_status}" = "xenabled" ];then
+    spidev2_desc=${spidev2_desc}"(X)"
+  fi
+
+  if [ "x${1}" = "x${spidev0}" -o "x${1}" = "x${spidev1}" -o "x${1}" = "x${spidev2}" ]; then
+    selected_dev=${1}
+  else
+    selected_dev=$(whiptail --menu "Choose the spi0 device" 20 60 10 \
+    "${spidev0}" "${spidev0_desc}" \
+    "${spidev1}" "${spidev1_desc}" \
+    "${spidev2}" "${spidev2_desc}" \
+    3>&1 1>&2 2>&3)
+  fi
+
+  if [ $? -eq 0 ]; then
+    case ${selected_dev} in
+    ${spidev0})
+    fdtput --type s ${DTB_W} spidev0 status "okay" || whiptail --msgbox "Fail to enable ${spidev0}" 20 60 1
+    fdtput --type s ${DTB_W} pitft status "disabled" || whiptail --msgbox "Fail to disable ${spidev1}" 20 60 1
+    fdtput --type s ${DTB_W} pitft_ts status "disabled" || whiptail --msgbox "Fail to disable ${spidev1}" 20 60 1
+    fdtput --type s ${DTB_W} spiflash status "disabled" || whiptail --msgbox "Fail to disable ${spidev2}" 20 60 1
+    do_display fb0
+    ;;
+    ${spidev1})
+    local warning="WARNING: Enable ${spidev1} will disable serial2"
+    whiptail --yesno "Enable/Disable ${spidev1} module?\n${warning}" 20 60 2 \
+                  --yes-button Enable --no-button Disable
+    RET=$? 
+    if [ $RET -eq 0 ]; then
+      fdtput --type s ${DTB_W} spidev0 status "disabled" || whiptail --msgbox "Fail to disable ${spidev0}" 20 60 1
+      fdtput --type s ${DTB_W} pitft status "okay" || whiptail --msgbox "Fail to enable ${spidev1}" 20 60 1
+      fdtput --type s ${DTB_W} pitft_ts status "okay" || whiptail --msgbox "Fail to enable ${spidev1}" 20 60 1
+      fdtput --type s ${DTB_W} spiflash status "disabled" || whiptail --msgbox "Fail to disable ${spidev2}" 20 60 1
+      fdtput --type s ${DTB_W} serial2 status "disabled" || whiptail --msgbox "Fail to disable ${serial2}" 20 60 1
+      do_display fb_st7789s
+    fi
+    ;;
+    ${spidev2})
+    fdtput --type s ${DTB_W} spidev0 status "disabled" || whiptail --msgbox "Fail to disable ${spidev0}" 20 60 1
+    fdtput --type s ${DTB_W} pitft status "disabled" || whiptail --msgbox "Fail to disable ${spidev1}" 20 60 1
+    fdtput --type s ${DTB_W} pitft_ts status "disabled" || whiptail --msgbox "Fail to disable ${spidev1}" 20 60 1
+    fdtput --type s ${DTB_W} spiflash status "okay" || whiptail --msgbox "Fail to enable ${spidev2}" 20 60 1
+    do_display fb0
+    ;;
+    esac
+  fi
+}
+
+do_select_i2s0dev() {
+  local selected_dev="pcm5102a"  
+  local i2sdev0="pcm5102a"
+  local i2sdev0_desc="NanoHat PCM5102A"
+  local i2sdev0_status=`do_get_dtb_status pcm5102a status`
+  
+  if [ "x${i2sdev0_status}" = "xenabled" ];then
+    i2sdev0_desc=${spidev0_desc}"(X)"
+  fi
+
+  selected_dev=$(whiptail --menu "Choose the i2s0 device" 20 60 10 \
+  "${i2sdev0}" "${i2sdev0_desc}" \
+  3>&1 1>&2 2>&3)
+
+  if [ $? -eq 0 ]; then
+    case ${selected_dev} in
+    ${i2sdev0})
+    fdtput --type s ${DTB_W} pcm5102a status "okay" || whiptail --msgbox "Fail to enable ${i2sdev0}" 20 60 1
+    # card order must be:
+    # card0      Dummy               
+    # card1      Loopback            
+    # card2      Codec               
+    # card3      allwinnerhdmi
+    # card4      I2Smaster
+    do_audio card4
+    ;;
+    esac
+  fi
+}
+
+do_peripheral_status() {
+  is_allwinner_mainline_kernel
+  if [ $IS_ALLWINNER_M -eq 0 ]; then
+    whiptail --msgbox "Only allwinner boards with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+  if ! dpkg -s device-tree-compiler >/dev/null 2>&1; then
+    apt-get install -y device-tree-compiler
+  fi
+
+  local peripherals=$1
+  case ${peripherals} in
+  serial)
+    local serial0_status=`do_get_dtb_status serial0 status`
+    local serial1_status=`do_get_dtb_status serial1 status`
+    local serial2_status=`do_get_dtb_status serial2 status`
+    local serial3_status=`do_get_dtb_status serial3 status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}0" "Enable/Disable ${peripherals}0[${serial0_status}]" \
+    "${peripherals}1" "Enable/Disable ${peripherals}1[${serial1_status}]" \
+    "${peripherals}2" "Enable/Disable ${peripherals}2[${serial2_status}]" \
+    "${peripherals}3" "Enable/Disable ${peripherals}3[${serial3_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  i2c)
+    local i2c0_status=`do_get_dtb_status i2c0 status`
+    local i2c1_status=`do_get_dtb_status i2c1 status`
+    local i2c2_status=`do_get_dtb_status i2c2 status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}0" "Enable/Disable ${peripherals}0[${i2c0_status}]" \
+    "${peripherals}1" "Enable/Disable ${peripherals}1[${i2c1_status}]" \
+    "${peripherals}2" "Enable/Disable ${peripherals}2[${i2c2_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  spi)
+    local spi0_status=`do_get_dtb_status spi0 status`
+    local spi1_status=`do_get_dtb_status spi1 status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}0" "Enable/Disable ${peripherals}0[${spi0_status}]" \
+    "${peripherals}1" "Enable/Disable ${peripherals}1[${spi1_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  pwm)
+    local pwm0_status=`do_get_dtb_status pwm0 status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}0" "Enable/Disable ${peripherals}0[${pwm0_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  i2s)
+    local i2s0_status=`do_get_dtb_status i2s0 status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}0" "Enable/Disable ${peripherals}0[${i2s0_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  ir)
+    local ir_status=`do_get_dtb_status ir status`
+    FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Peripherals Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "${peripherals}" "Enable/Disable ${peripherals}[${ir_status}]" \
+    3>&1 1>&2 2>&3)
+    ;;
+  esac
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      serial*|i2c*|spi*|pwm*|i2s*|ir*)
+            if [ "x${FUN}" = "xpwm0" ]; then                          # serial0 / pwm0
+              warning="WARNING: Enable ${FUN} will disable serial0"
+            elif [ "x${FUN}" = "xserial0" ]; then
+              warning="WARNING: Enable ${FUN} will disable pwm0"
+            elif [ "x${FUN}" = "xi2c1" ]; then
+              warning="WARNING: Enable ${FUN} will disable i2s0"      # i2s0 / i2c1
+            elif [ "x${FUN}" = "xi2s0" ]; then
+              warning="WARNING: Enable ${FUN} will disable i2c1"
+            elif [ "x${FUN}" = "xserial2" ]; then
+              warning="WARNING: Enable ${FUN} will disable matrix-2.8-tft-lcd"   # serial / 2.8-tft
+            elif [ "x${FUN}" = "xserial3" ]; then                   # serial3 / spi1
+              warning="WARNING: Enable ${FUN} will disable spi1"
+            elif [ "x${FUN}" = "xspi1" ]; then
+              warning="WARNING: Enable ${FUN} will disable serial3"
+            else
+              warning=""
+            fi
+            whiptail --yesno "Enable/Disable ${FUN} module?\n${warning}" 20 60 2 \
+                  --yes-button Enable --no-button Disable
+
+            RET=$? 
+            if [ $RET -eq 0 ]; then
+                fdtput --type s ${DTB_W} ${FUN} status "okay" || whiptail --msgbox "Fail to enable $FUN" 20 60 1
+                if [ "x${FUN}" = "xserial0" ]; then           # serial0 & pwm0 share PA5
+                  fdtput --type s ${DTB_W} pwm0 status "disabled" || whiptail --msgbox "Fail to disable pwm0" 20 60 1
+                  sed -i 's/tty0/ttyS0/g' /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr >/dev/null 2>&1
+                elif [ "x${FUN}" = "xpwm0" ]; then
+                  fdtput --type s ${DTB_W} serial0 status "disabled" || whiptail --msgbox "Fail to disable serial0" 20 60 1
+                  sed -i 's/ttyS0/tty0/g' /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr >/dev/null 2>&1
+                elif [ "x${FUN}" = "xi2c1" ]; then            # i2c1 & i2s0 share same pin.
+                  fdtput --type s ${DTB_W} i2s0 status "disabled" || whiptail --msgbox "Fail to disable i2s0" 20 60 1
+                elif [ "x${FUN}" = "xi2s0" ]; then
+                  fdtput --type s ${DTB_W} i2c1 status "disabled" || whiptail --msgbox "Fail to disable i2c1" 20 60 1
+                  do_select_i2s0dev
+                elif [ "x${FUN}" = "xpcm5102a" ]; then
+                  fdtput --type s ${DTB_W} i2s0 status "okay" || whiptail --msgbox "Fail to enable i2s0" 20 60 1
+                  fdtput --type s ${DTB_W} i2c1 status "disabled" || whiptail --msgbox "Fail to disable i2c1" 20 60 1
+                elif [ "x${FUN}" = "xspi0" ]; then
+                  do_select_spi0dev
+                elif [ "x${FUN}" = "xserial2" ]; then         # serial2 & 2.8-tft share PA1
+                  do_select_spi0dev "spidev0.0"
+                elif [ "x${FUN}" = "xserial3" ]; then            # serial3 & spi1 share same pin
+                  fdtput --type s ${DTB_W} spi1 status "disabled" || whiptail --msgbox "Fail to disable spi1" 20 60 1
+                elif [ "x${FUN}" = "xspi1" ]; then
+                  fdtput --type s ${DTB_W} serial3 status "disabled" || whiptail --msgbox "Fail to disable serial3" 20 60 1
+                fi
+            else
+                fdtput --type s ${DTB_W} ${FUN} status "disabled" || whiptail --msgbox "Fail to disable $FUN" 20 60 1
+                if [ "x${FUN}" = "xi2s0" ]; then
+                  # card2: internal codec
+                  do_audio card2
+                fi
+            fi
+            ASK_TO_REBOOT=1
+            sync
+            ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+
+do_display() {
+  is_allwinner_mainline_kernel
+  if [ $IS_ALLWINNER_M -eq 0 ]; then
+    whiptail --msgbox "Only allwinner boards with mainline kernel support this option." 20 60 2
+    return 0
+  fi
+
+  # collect all display device. hdmi/lcd must be fb0 and 2.8-tft must be fb1/fb_st7789s.
+  local cardnum=0
+  GRAPHICS_DIR=/sys/class/graphics/
+  for fb in `ls ${GRAPHICS_DIR} | grep -E "fb[0-9]"`; do
+    local index=`echo ${fb} | grep -oE [0-9]`
+    local card[${index}]=${fb}
+    local card_desc[${index}]=`cat ${GRAPHICS_DIR}/${fb}/name`
+    if [ -z "${card_desc[${index}]}" ]; then
+      card_desc[${index}]="framebuffer${index}"
+    fi
+    cardnum=$((cardnum + 1))
+  done
+
+  local selected_disp="unknown"
+  local tty_dev=0
+  
+  # print and select display device
+  cur_display=`cat /boot/boot.cmd | grep map | cut -d ":" -f 2`
+  if [ -z "$1" ]; then
+    if [ ${cardnum} -eq 0 ]; then
+      whiptail --msgbox "No display device found.Please connect HDMI or enable Matrix-2.8 SPI Key TFT and reboot" 20 60 2
+      return 0
+    fi
+    # only detected device need X-tag
+    if [ ! -z "${card_desc[${cur_display}]}" ]; then
+      card_desc[${cur_display}]=${card_desc[${cur_display}]}"(X)"
+    fi
+    # max display number: 5 
+    selected_disp=$(whiptail --menu "Choose the display output" 20 60 10 \
+    "${card[0]}" "${card_desc[0]}" \
+    "${card[1]}" "${card_desc[1]}" \
+    "${card[2]}" "${card_desc[2]}" \
+    "${card[3]}" "${card_desc[3]}" \
+    "${card[4]}" "${card_desc[4]}" \
+    3>&1 1>&2 2>&3)
+  else 
+    selected_disp=$1
+    # display already enabled 
+    if [ "x${selected_disp}" = "xfb0" -a "x${cur_display}" = "x0" ] \
+      || [ "x${selected_disp}" = "xfb_st7789s" -a "x${cur_display}" = "x1" ] \
+      || [ "x${selected_disp}" = "xfb1" -a "x${cur_display}" = "x1" ]; then
+      return 0
+    fi
+  fi
+
+  if [ ! -z "${selected_disp}" ]; then
+    if /usr/bin/select_display.sh ${selected_disp} >/dev/null; then
+      whiptail --msgbox "Select ${selected_disp} as system default display device OK. Please reboot" 20 60 1
+      ASK_TO_REBOOT=1
+    else
+      whiptail --msgbox "Fail to select ${selected_disp} as system default display device" 20 60 1
+    fi
+  fi
+}
+
+#    "P2 Wireless Settings" "Connect to router, or enable AP mode" \
+#      P2\ *) do_wifi_menu;;
+
+do_interface_menu() {
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Interfacing Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "P1 SSH" "Enable/Disable remote command line access to your Pi using SSH" \
+    3>&1 1>&2 2>&3)
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      P1\ *) do_ssh ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+do_advanced_menu() {
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Advanced Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "A0 Display" "Select system default display device" \
+    "A1 Audio" "Select system default audio device" \
+    "A2 Welcome message" "Disable/Enable Linux welcome message" \
+    "A3 Serial" "Enable/Disable Serial" \
+    "A4 I2C" "Enable/Disable I2C" \
+    "A5 SPI" "Enable/Disable SPI" \
+    "A6 PWM" "Enable/Disable PWM" \
+    "A7 I2S" "Enable/Disable I2S" \
+    "A8 IR" "Enable/Disable IR" \
+    "A9 CPUFreq" "Select CPU highest frequency" \
+    3>&1 1>&2 2>&3)
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      A0\ *) do_display ;;
+      A1\ *) do_audio ;;
+      A2\ *) do_welcome_message ;;
+      A3\ *) do_peripheral_status serial ;;
+      A4\ *) do_peripheral_status i2c ;;
+      A5\ *) do_peripheral_status spi ;;
+      A6\ *) do_peripheral_status pwm ;;
+      A7\ *) do_peripheral_status i2s ;;
+      A8\ *) do_peripheral_status ir ;;
+      A9\ *) do_cpu_freq ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+
+do_boot_menu() {
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Boot Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Back --ok-button Select \
+    "B1 Autologin" "Choose how to boot into text console, autologin or requiring user" \
+    "B2 Wait for Network at Boot" "Choose whether to wait for network connection during boot" \
+    "B3 Boot device" "Choose the boot device" \
+    3>&1 1>&2 2>&3)
+
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    return 0
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      B1\ *) do_boot_behaviour ;;
+      B2\ *) do_boot_wait ;;
+      B3\ *) do_boot_device ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  fi
+}
+
+do_update() {
+  cd /tmp/
+  rm -rf npi-config
+  git clone https://github.com/friendlyarm/npi-config
+  if [ $? -eq 0 ]; then
+    SELFPATH=`which npi-config`
+    cp -f npi-config/npi-config $SELFPATH
+    chmod 755 $SELFPATH
+    rm -fr npi-config
+    printf "Sleeping 5 seconds before reloading npi-config\n" &&
+    sleep 5 &&
+    exec $SELFPATH
+  else
+    whiptail --msgbox "There was an error checking new version." 20 60 1
+  fi
+}
+
+#
+# Interactive use loop
+#
+calc_wt_size
+while true; do
+  FUN=$(whiptail --title "NanoPi Software Configuration Tool (npi-config)" --menu "Setup Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
+    "1 Change User Password" "Change password for the default user (pi)" \
+    "2 Hostname" "Set the visible name for this Pi on a network" \
+    "3 Boot Options" "Configure options for start-up" \
+    "4 Localisation Options" "Set up language and regional settings to match your location" \
+    "5 Interfacing Options" "Configure connections to peripherals" \
+    "6 Advanced Options" "Configure advanced settings" \
+    "7 Update" "Update this tool to the latest version" \
+    "8 About npi-config" "Information about this configuration tool" \
+    3>&1 1>&2 2>&3)
+  RET=$?
+  if [ $RET -eq 1 ]; then
+    do_finish
+  elif [ $RET -eq 0 ]; then
+    case "$FUN" in
+      1\ *) do_change_pass ;;
+      2\ *) do_change_hostname ;;
+      3\ *) do_boot_menu ;;
+      4\ *) do_internationalisation_menu ;;
+      5\ *) do_interface_menu ;;
+      6\ *) do_advanced_menu ;;
+      7\ *) do_update ;;
+      8\ *) do_about ;;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+    esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
+  else
+    exit 1
+  fi
+done
