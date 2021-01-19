@@ -45,4 +45,21 @@ sudo nmcli c up [CONNECTION NAME | UUID] passwd-file /home/pi/.nmcli/passwd-wlan
 2. 运行sudo npi-config
 3. 3 Boot Options -> B3 Boot device -> D3 emmc
 
+### 使用新的dts的中的蓝色led设备
+1. 将 sun8i-h3-atom_n.dtb 替换到 /boot/sun8i-h3-atom_n.dtb
+2. 重启
+3. Python代码
+```python
+from periphery import LED
+import time
+ledUser = LED("usr_led", True)
+while True:
+    time.sleep(1)
+    ledUser.write(255)
+    time.sleep(1)
+    ledUser.write(0)
+
+ledUser.close()
+```
+4. gpio_key_led.py是按下Key后，亮起蓝色led
 
