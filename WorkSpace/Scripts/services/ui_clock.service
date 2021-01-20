@@ -1,0 +1,11 @@
+[Unit]
+After=network.target
+[Service]
+Type=oneshot
+#PIDFile=/home/pi/.run/ui_clock.pid
+ExecStart=/home/pi/WorkSpace/Scripts/start_ui_clock.sh
+#ExecReload=/bin/kill -s HUP $MAINPID
+#ExecStop=/bin/kill -s QUIT $MAINPID
+#PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
