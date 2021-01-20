@@ -9,7 +9,7 @@ wiki: https://wiki.seeedstudio.com/cn/Quantum-Mini-Linux-Development-Kit/
 http://wiki.friendlyarm.com/wiki/index.php/Use_NetworkManager_to_configure_network_settings
 
 2. 镜像文件
-https://files.seeedstudio.com/wiki/Quantum-Mini-Linux-Dev-Kit/atom-n_release-20-12-19.zip
+https://files.seeedstudio.com/wiki/Quantum-Mini-Linux-Dev-Kit/quark-n-21-1-11.zip
 
 3. 将TF卡系统拷贝到emmc，count的值需要先确定emmc的扇区数量
 ```bash
