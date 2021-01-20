@@ -67,3 +67,24 @@ ledUser.close()
 ```
 4. gpio_key_led.py是按下Key后，亮起蓝色led
 
+### 自带LCD屏的Clock
+1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
+2. 运行如下命令进行安装
+   ```bash
+    sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable ui_clock
+   ```
+3. 命令提示：
+   1. 启动 （手动启动后按Ctrl + C可脱离）
+        ```bash
+        sudo systemctl start ui_clock
+        ```
+   2. 停止
+        ```bash
+        sudo systemctl stop ui_clock
+        ```
+   3. 查看状态
+        ```bash
+        sudo systemctl status ui_clock
+        ```
