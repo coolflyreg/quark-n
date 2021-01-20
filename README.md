@@ -67,7 +67,7 @@ ledUser.close()
 ```
 4. gpio_key_led.py是按下Key后，亮起蓝色led
 
-### 自带LCD屏的Clock
+### 用于自带LCD屏的Clock（由群内大神 “海 风” 提供原始程序）
 1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
 2. 运行如下命令进行安装
    ```bash
