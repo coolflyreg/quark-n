@@ -42,8 +42,8 @@ class UIManager(metaclass=Singleton):
         self.__ui_dict[WelcomeUI.__name__] = WelcomeUI(0)
         self.__ui_dict[ClockUI.__name__] = ClockUI(1)
         self.__ui_dict[MenuUI.__name__] = MenuUI(2)
-        # self.__ui_dict[WelcomeUI.__name__].show()
-        self.__ui_dict[MenuUI.__name__].show()
+        self.__ui_dict[WelcomeUI.__name__].show()
+        # self.__ui_dict[MenuUI.__name__].show()
         pass
 
     def update(self):

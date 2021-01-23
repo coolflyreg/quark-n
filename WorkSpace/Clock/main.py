@@ -220,12 +220,11 @@ def drawLongPressState():
     pass
 
 running = True
+
 def main():
     global running
-    
     mouseLastMotion = 0
-
-    while True:
+    while running:
         for event in pygame.event.get():
             # print('pygame event', event)
             if event.type == pygame.QUIT:
@@ -258,7 +257,6 @@ def main():
 
         pygame.display.update()
         game_clock.tick(60)
-    pass
 
 
 if __name__ == '__main__':
