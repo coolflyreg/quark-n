@@ -1,0 +1,17 @@
+display:
+  device: /dev/fb1
+monitor:
+  socket-mode: 666
+  socket-path: /tmp/monitor.sock
+user-interface:
+  manager:
+    class: display.ui.core.UIManager
+api:
+  weather:
+    only-yahoo: False
+debug:
+  remote: False
+  command: True
+  touch-cmd: False
+folder:
+  home: /home/pi
