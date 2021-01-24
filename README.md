@@ -72,6 +72,7 @@ ledUser.close()
 1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
 2. 运行如下命令进行安装
    ```bash
+    mkdir /home/pi/WorkSpace/Clock/logs
     sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable ui_clock
