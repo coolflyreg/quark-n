@@ -44,6 +44,14 @@ sudo nmcli --ask c up SSID
 sudo nmcli c up [CONNECTION NAME | UUID] passwd-file /home/pi/.nmcli/passwd-wlan0
 ```
 
+8. Linux下声卡独占的原因和解决
+简单解决办法如下：
+在/boot/defaults/loader.conf或/etc/sysctl.conf中加入下面两行。
+```conf
+hw.snd.pcm0.vchans=4
+hw.snd.maxautovchans=4
+```
+
 ### TF卡有系统时启动到emmc分区
 1. 将 npi-config 覆盖拷贝到 /usr/bin/npi-config
 2. 运行sudo npi-config
