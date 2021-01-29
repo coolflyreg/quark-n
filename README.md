@@ -77,6 +77,7 @@ ledUser.close()
 5. 在/sys/class/leds下，显示 pwr_led(黄), status_led(白), usr_led(蓝)
 
 ### 用于自带LCD屏的Clock（由群内大神 “海 风” 提供原始程序）
+**需要先执行：使用新的dts的中的蓝色led设备**
 1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
 2. 运行如下命令进行安装
    ```bash
