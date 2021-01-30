@@ -1,17 +1,63 @@
+# 后台管理端
+server:
+  enable: true
+  # ip 地址
+  host: 192.168.1.206
+  # 端口号
+  port: 4096
+  # cookie 的 secret ，用于对 cookie 的内容进行加密及防止篡改
+  # 建议使用 os.urandom(24) 生成一串随机字符串
+  # 强烈建议修改!!!
+  cookie_secret: b'$\xe7"\xaa\xb5\xb5\x08\x95\xd2F\x9e\x02\xeeJN\x1d\x9a4We\x9ap\nh'
+  # 用户名
+  username: pi
+  # 密码的 md5，可以用 python3 wukong.py md5 "密码" 获得
+  # 初始密码为 quark
+  # 强烈建议修改!!!
+  validate: 57b7d993ffbd75aca3fe2060cf204f93
+
+# 相机
+camera:
+  # 拍照保存路径
+  dest_path: /home/pi/Pictures/
+
+# 调试设置
+debug:
+  command: true
+  remote: false
+  touch-cmd: false
+# 显示设备设置
 display:
+  # 显示设备，显示到Quark-N的自带屏幕上
   device: /dev/fb1
+
+# 文件夹设置
+folder:
+  home: /home/pi
+
 monitor:
   socket-mode: 666
   socket-path: /tmp/monitor.sock
+  pid-file: /run/ui_clock.pid
+
+# 机器人设置
+robot:
+  # 显示机器人状态后，延迟多长时间隐藏状态
+  show_delay: 10000
+  # 悟空设置
+  wukong:
+    root: /home/pi/WorkSpace/WuKong/wukong-robot
+
+# 界面设置
 user-interface:
+  # 启动图设置
+  launcher:
+    # 当前第几个启动图
+    current: 1
+    # 启动图列表，尺寸240*135
+    images:
+    - images/launcher/launcher_240.gif
+    - images/launcher/launcher_240_2.gif
+  # 不要改动
   manager:
     class: display.ui.core.UIManager
-api:
-  weather:
-    only-yahoo: False
-debug:
-  remote: False
-  command: True
-  touch-cmd: False
-folder:
-  home: /home/pi

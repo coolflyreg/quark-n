@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import os
+import sys
 import time
 import logging
+import signal
 from queue import Queue
 from core import Singleton, Event, EventDispatcher
 from system.config import Config
-import os
 
 
 class UIManager(metaclass=Singleton):
@@ -17,6 +19,8 @@ class UIManager(metaclass=Singleton):
     current_ui = None
     window_size = None
     surface = None
+    running = True
+    robotUI = None
     __ui_dict = {}
     __ui_stack = []
 
@@ -35,26 +39,64 @@ class UIManager(metaclass=Singleton):
     def getWindowSize(self):
         return self.window_size
 
+    def quit(self):
+        self.running = False
+        # os.kill(os.getpid(), signal.SIGINT)
+        # try:
+        #     # os.kill()
+        #     sys.exit(0)
+        # except:
+        #     print('sys.exit(0)')
+        #     pass
+        # sys.exit(0)
+    
+    def isRunning(self):
+        return self.running
+
     def init(self):
         from .welcome import WelcomeUI
         from .clock import ClockUI
         from .menu import MenuUI
-        self.__ui_dict[WelcomeUI.__name__] = WelcomeUI(0)
-        self.__ui_dict[ClockUI.__name__] = ClockUI(1)
-        self.__ui_dict[MenuUI.__name__] = MenuUI(2)
+        from .launchers import LaunchersUI
+        from .robot import RobotUI
+        from .wukongMenu import WuKongMenuUI
+        from .camera import CameraUI
+        from .album import AlbumUI
+
+        self.robotUI = RobotUI(0)
+        self.__ui_dict[WelcomeUI.__name__]          = WelcomeUI(len(self.__ui_dict))
+        self.__ui_dict[ClockUI.__name__]            = ClockUI(len(self.__ui_dict))
+        self.__ui_dict[MenuUI.__name__]             = MenuUI(len(self.__ui_dict))
+        self.__ui_dict[LaunchersUI.__name__]        = LaunchersUI(len(self.__ui_dict))
+        self.__ui_dict[WuKongMenuUI.__name__]       = WuKongMenuUI(len(self.__ui_dict))
+        self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
+        self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
+
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
+        # self.__ui_dict[CameraUI.__name__].show()
         pass
 
     def update(self):
-        if self.current() is not None:
-            self.current().update()
+        if not self.running:
+            return
+        if self._current() is not None:
+            self._current().update()
+
+        self.robotUI.update()
 
         for ui_name in self.__ui_dict:
             if self.__ui_dict[ui_name] is not self.current():
                 self.__ui_dict[ui_name].update_offscreen()
 
     def current(self):
+        if self.robotUI.is_showing():
+            return self.robotUI
+        if len(self.__ui_stack) == 0:
+            return None
+        return self.__ui_stack[-1:][0]
+
+    def _current(self):
         if len(self.__ui_stack) == 0:
             return None
         return self.__ui_stack[-1:][0]
@@ -73,6 +115,18 @@ class UIManager(metaclass=Singleton):
 
     def get(self, ui_name):
         return self.__ui_dict[ui_name]
+
+    def robotEvent(self, eventName, eventArgs):
+        self.robotUI.event(eventName, eventArgs)
+
+    def robotMessage(self, message):
+        self.robotUI.showMessage(message)
+
+    def robotWakeUp(self):
+        self.robotUI.wakeUp()
+
+    def robotSleep(self):
+        self.robotUI.sleep()
 
     pass
 
