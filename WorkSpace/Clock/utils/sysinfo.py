@@ -53,6 +53,9 @@ def get_host_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
         ip = s.getsockname()[0]
+    except OSError as e:
+        #print('network can\'t be reached!')
+        ip = 'No Network'
     finally:
         if s is not None:
             s.close()
@@ -113,18 +116,26 @@ def get_disk_info():
     }
 
     p = os.popen("df -h /")
-    i = 0
-    while 1:
-        i = i +1
-        line = p.readline()
-        if i==2:
-            disk_info_lines = (line.split()[1:5])
+    # i = 0
+    # while 1:
+    #     i = i +1
+    #     line = p.readline()
+    #     if i==2:
+    #         disk_info_lines = (line.split()[1:5])
 
-            disk_info['total'] = disk_info_lines[0]
-            disk_info['used'] = disk_info_lines[1]
-            disk_info['free'] = disk_info_lines[2]
-            disk_info['percent'] = disk_info_lines[3]
+    #         disk_info['total'] = disk_info_lines[0]
+    #         disk_info['used'] = disk_info_lines[1]
+    #         disk_info['free'] = disk_info_lines[2]
+    #         disk_info['percent'] = disk_info_lines[3]
 
-            return disk_info
+    #         return disk_info
+    line = p.readline()
+    line = p.readline()
+    disk_info_lines = (line.split()[1:5])
+
+    disk_info['total'] = disk_info_lines[0]
+    disk_info['used'] = disk_info_lines[1]
+    disk_info['free'] = disk_info_lines[2]
+    disk_info['percent'] = disk_info_lines[3]
 
     return disk_info
