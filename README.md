@@ -150,3 +150,17 @@ ledUser.close()
 - [ ] 加入MPU6050，进行姿态操作，增加甩飞Quark-N的几率
 - [ ] 实现设置界面的功能，可调整一些参数
 
+#### 与WuKong-robot共同使用
+**注意：需要先执行：Linux下声卡独占的原因和解决**
+1. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
+2. 替换掉 /home/pi/WorkSpace/WuKong/wukong-robot
+3. 把这个库里的 /WuKong/contrib/LcdDisplay 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
+4. 在 /home/pi/.wukong/config.yml 中添加配置。注意要复合格式
+```yaml
+quark_ui:
+      api_host: 'http://127.0.0.1:4096'
+      validate: '57b7d993ffbd75aca3fe2060cf204f93' 
+      enable: true
+```
+5. 目前snowboy的在线训练无法使用了，暂时在配置中改为：hotword: 'wukong.pmdl'，唤醒词：孙悟空
+6. 其他可以参考wukong-robot原版的配置
