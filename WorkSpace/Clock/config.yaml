@@ -1,8 +1,8 @@
 # 后台管理端
 server:
   enable: true
-  # ip 地址
-  host: 192.168.1.206
+  # ip 地址，如需从外部访问，需要改为192开头的IP
+  host: 127.0.0.1
   # 端口号
   port: 4096
   # cookie 的 secret ，用于对 cookie 的内容进行加密及防止篡改
