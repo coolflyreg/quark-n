@@ -1,12 +1,12 @@
 # -*- coding:utf-8 -*-
 
-import yaml
+import os
+import sys
+from ruamel.yaml import YAML
 import logging
 from core import Singleton
 
-
 logger = logging.getLogger('display.ui')
-
 
 class Config(metaclass=Singleton):
 
@@ -17,13 +17,18 @@ class Config(metaclass=Singleton):
         self.reload()
 
     def reload(self):
-        config_file = open('config.yaml', 'r')
-        self.__config_data = yaml.load(config_file, yaml.FullLoader)
+        yaml = YAML()
+        yaml.default_flow_style = False
+        config_file = open(os.path.join(sys.path[0], 'config.yaml'), 'r')
+        # self.__config_data = yaml.load(config_file, yaml.FullLoader)
+        self.__config_data = yaml.load(config_file)
         config_file.close()
 
     def save(self):
-        config_file = open('config.yaml', 'w')
-        yaml.dump(self.__config_data, stream=config_file, default_flow_style=False, encoding='utf-8')
+        yaml = YAML()
+        yaml.default_flow_style = False
+        config_file = open(os.path.join(sys.path[0], 'config.yaml'), 'w')
+        yaml.dump(self.__config_data, config_file)
         config_file.close()
 
     def get(self, key_path, default=None):
@@ -48,7 +53,7 @@ class Config(metaclass=Singleton):
         self.call_listeners(key_path, value)
 
     def dump(self):
-        return yaml.dump(self.__config_data)
+        return yaml.dump(self.__config_data, sys.stdout)
 
     def call_listeners(self, key_path, value):
         if self.__listeners.__contains__(key_path) is False:
@@ -95,3 +100,4 @@ class Config(metaclass=Singleton):
         return self.dump()
 
     pass
+

@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import os
+import sys
 import time
 import logging
+import signal
 from queue import Queue
 from core import Singleton, Event, EventDispatcher
 from system.config import Config
-import os
 
 
 class UIManager(metaclass=Singleton):
@@ -17,8 +19,12 @@ class UIManager(metaclass=Singleton):
     current_ui = None
     window_size = None
     surface = None
+    running = True
+    robotUI = None
     __ui_dict = {}
     __ui_stack = []
+    __dialog_stack = []
+    is_quit = False
 
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -35,26 +41,67 @@ class UIManager(metaclass=Singleton):
     def getWindowSize(self):
         return self.window_size
 
+    def quit(self, send_signal = False):
+        if self.is_quit is True:
+            return
+        self.is_quit = True
+        for ui_name in self.__ui_dict:
+            self.__ui_dict[ui_name].on_destroy()
+        self.running = False
+        os.kill(os.getpid(), signal.SIGINT)
+
+    def isRunning(self):
+        return self.running
+
     def init(self):
         from .welcome import WelcomeUI
         from .clock import ClockUI
         from .menu import MenuUI
-        self.__ui_dict[WelcomeUI.__name__] = WelcomeUI(0)
-        self.__ui_dict[ClockUI.__name__] = ClockUI(1)
-        self.__ui_dict[MenuUI.__name__] = MenuUI(2)
+        from .launchers import LaunchersUI
+        from .robot import RobotUI
+        from .wukongMenu import WuKongMenuUI
+        from .camera import CameraUI
+        from .album import AlbumUI
+
+        self.robotUI = RobotUI(0)
+        self.__ui_dict[WelcomeUI.__name__]          = WelcomeUI(len(self.__ui_dict))
+        self.__ui_dict[ClockUI.__name__]            = ClockUI(len(self.__ui_dict))
+        self.__ui_dict[MenuUI.__name__]             = MenuUI(len(self.__ui_dict))
+        self.__ui_dict[LaunchersUI.__name__]        = LaunchersUI(len(self.__ui_dict))
+        self.__ui_dict[WuKongMenuUI.__name__]       = WuKongMenuUI(len(self.__ui_dict))
+        self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
+        self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
+
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
+        # self.__ui_dict[WuKongMenuUI.__name__].show()
         pass
 
-    def update(self):
-        if self.current() is not None:
-            self.current().update()
+    def update(self, surface = None):
+        if not self.running:
+            return
+        if self._current() is not None:
+            self._current().update()
+
+        self.robotUI.update()
+
+        if self._currentDialog() is not None:
+            self._currentDialog().update()
 
         for ui_name in self.__ui_dict:
-            if self.__ui_dict[ui_name] is not self.current():
+            if self.__ui_dict[ui_name] is not self._current():
                 self.__ui_dict[ui_name].update_offscreen()
 
     def current(self):
+        if self._currentDialog() is not None:
+            return self._currentDialog()
+        if self.robotUI.is_showing():
+            return self.robotUI
+        if len(self.__ui_stack) == 0:
+            return None
+        return self.__ui_stack[-1:][0]
+
+    def _current(self):
         if len(self.__ui_stack) == 0:
             return None
         return self.__ui_stack[-1:][0]
@@ -66,13 +113,55 @@ class UIManager(metaclass=Singleton):
     def pop(self):
         return self.__ui_stack.pop()
 
-    def replace(self, ui):
+    def replace(self, ui, root=False):
+        if root is True:
+            while len(self.__ui_stack) > 1:
+                self.pop()
         self.pop()
-        self.push(ui)
+        ui.show()
+        # self.push(ui)
+        pass
+
+    def _currentDialog(self):
+        if len(self.__dialog_stack) == 0:
+            return None
+        return self.__dialog_stack[-1:][0]
+
+    def pushDialog(self, ui):
+        self.__dialog_stack.append(ui)
+        pass
+
+    def popDialog(self):
+        return self.__dialog_stack.pop()
+
+    def replaceDialog(self, ui, root=False):
+        if root is True:
+            while len(self.__dialog_stack) > 1:
+                self.popDialog()
+        self.popDialog()
+        ui.show()
+        # self.push(ui)
+        pass
+
+    def closeAllDialog(self):
+        while len(self.__dialog_stack) > 0:
+            self.popDialog()
         pass
 
     def get(self, ui_name):
         return self.__ui_dict[ui_name]
+
+    def robotEvent(self, eventName, eventArgs):
+        self.robotUI.event(eventName, eventArgs)
+
+    def robotMessage(self, message):
+        self.robotUI.showMessage(message)
+
+    def robotWakeUp(self):
+        self.robotUI.wakeUp()
+
+    def robotSleep(self):
+        self.robotUI.sleep()
 
     pass
 
@@ -104,7 +193,7 @@ class BaseUI:
     def paint(self):
         pass
 
-    def update(self):
+    def update(self, surface = None):
         pass
 
     def update_offscreen(self):
@@ -128,51 +217,26 @@ class BaseUI:
     def onKeyLongPress(self, escapedSeconds):
         pass
 
-    # def process_cmds(self, cmds):
-    #     if len(cmds) <= 0:
-    #         return False
-
-    #     if self.controls is not None:
-    #         for c in self.controls:
-    #             if c.process_cmds(cmds):
-    #                 return True
-
-    #     for serial_cmd in cmds:
-    #         if len(serial_cmd) > 3 and serial_cmd[:3] == 'BN:':
-    #             try:
-    #                 btn_index = int(serial_cmd[3:])
-    #                 self.logger.info("Release BN {0}".format(btn_index))
-    #             except ValueError as e:
-    #                 self.logger.warning('Error cmd: {0}'.format(serial_cmd))
-
-    #         if len(serial_cmd) > 3 and serial_cmd[:3] == 'BS:':
-    #             try:
-    #                 btn_index = int(serial_cmd[3:])
-    #                 self.logger.info("Press BS {0}".format(btn_index))
-    #             except ValueError as e:
-    #                 self.logger.warning('Error cmd: {0}'.format(serial_cmd))
-
-    #     return False
-
-    def __show(self):
-        ui_manager = UIManager()
+    def _show(self):
+        # print('BaseUI _show')
         self.on_shown()
 
     def show(self):
+        # print('BaseUI show')
         ui_manager = UIManager()
         ui_manager.push(self)
-        self.__show()
+        self._show()
 
     def replace_current(self):
         ui_manager = UIManager()
         ui_manager.replace(self)
-        self.__show()
+        self._show()
 
     def hide(self):
         ui_manager = UIManager()
         ui_manager.pop()
         self.on_hidden()
-        ui_manager.current().__show()
+        ui_manager.current()._show()
 
     def on_shown(self):
         if self.controls is not None:
@@ -182,6 +246,9 @@ class BaseUI:
         pass
 
     def on_hidden(self):
+        pass
+
+    def on_destroy(self):
         pass
 
     pass

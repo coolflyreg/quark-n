@@ -2,15 +2,19 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import threading
 import logging
 import logging.config
 import pygame
 import time
+import signal
 from system.config import Config
 from ui.core import UIManager
 from periphery import GPIO
 from periphery import LED
 import _thread
+from server import service
+from utils import *
 
 # print('fontfile path: ', os.getcwd(), sys.path)
 os.chdir(sys.path[0])
@@ -24,17 +28,20 @@ logger = logging.getLogger('main')
 gpio_key = GPIO("/dev/gpiochip1", 3, "in")
 ledUser = LED("usr_led", True)
 
-def runAsync(work):
-    # loop = asyncio.get_event_loop()
-    # task = asyncio.ensure_future(work)
-    # result = loop.run(task)
-    _thread.start_new_thread(work, ())
-    pass
+def writePid():
+    pid = str(os.getpid())
+    f = open(Config().get('monitor.pid-file', '/run/ui_clock.pid'), 'w')
+    f.write(pid)
+    f.close()
+
+writePid()
 
 if not os.getenv('SDL_FBDEV'):
     os.putenv('SDL_FBDEV', Config().get('display.device'))#利用quark自带tft屏幕显示
 
 pygame.init()
+pygame.mixer.quit()
+
 from ui.theme import *
 game_clock = pygame.time.Clock()
 
@@ -45,6 +52,7 @@ window_size=(w,h)
 
 game_surface = pygame.display.set_mode(window_size, pygame.FULLSCREEN)
 pygame.mouse.set_visible( False )
+mouseLastMotion = 0
 
 uiManager = UIManager()
 uiManager.setWindowSize(window_size)
@@ -60,6 +68,11 @@ gpio_push_count = 0
 
 LongPressSeconds = (2,5,10)
 LongPressSecondsState = [False, False, False]
+
+def gotoMenu():
+    from ui.menu import MenuUI
+    uiManager.closeAllDialog()
+    uiManager.replace(uiManager.get(MenuUI.__name__), root=True)
 
 def flashLed():
     # print('flash led')
@@ -134,8 +147,7 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
         # pass
     if isLongPress: 
         if longPressSeconds > 2 and longPressSeconds < 5:
-            from ui.menu import MenuUI
-            uiManager.get(MenuUI.__name__).show()
+            gotoMenu()
             pass
     ledUser.write(0)
     pass
@@ -161,6 +173,10 @@ def gpioKeyLongPress(escapedSeconds):
         
     pass
 
+def mouseIsVisible():
+    global mouseLastMotion
+    return (pygame.time.get_ticks() - mouseLastMotion) < 3000
+
 def drawLongPressStateView(escaped_push_time, current_x, bg_color):
     powerTxt = bigFont.render('POWER', True, color_black)
     offTxt = bigFont.render('OFF', True, color_black)
@@ -173,6 +189,7 @@ def drawLongPressStateView(escaped_push_time, current_x, bg_color):
     screenTxt = None
 
     long_press_second = int(escaped_push_time / 1000)
+
     if current_x > power_x and escaped_push_time >= 5000:
         powerOffRemain = miniFont.render(str(10 - long_press_second), True, color_black)
         pass
@@ -215,40 +232,74 @@ def drawLongPressState():
         if (current_PowerOff_x < 0):
             current_PowerOff_x = 0
 
+    if mouseIsVisible():
+        pos = pygame.mouse.get_pos()
+        if SIDE_MENU_RECT.collidepoint(pos):
+            from ui.menu import MenuUI
+            if uiManager.current().__class__.__name__ == MenuUI.__name__:
+                escaped_push_time = 2500
+            else:
+                escaped_push_time = 3500
+            current_PowerOff_x = w * (escaped_push_time / 10000)
+        pass
+
     if (current_PowerOff_x > 0):
         drawLongPressStateView(escaped_push_time, current_PowerOff_x, (255, 0, 0) if escaped_push_time < 2000 else (0, 255, 0))
     pass
 
-running = True
+
+def _signal_handler(signal, frame):
+    global uiManager, ledUser, gpio_key
+    service.stop_server()
+    # time.sleep(1)
+    # print('threading.active_count() =', threading.active_count())
+    # dumpThreads('_signal_handler')
+    uiManager.quit()
+    ledUser.close()
+    gpio_key.close()
+    
 
 def main():
-    global running
-    mouseLastMotion = 0
-    while running:
+    from ui.menu import MenuUI
+    global uiManager
+    global mouseLastMotion
+
+    MenuUI_name = MenuUI.__name__
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    service.run(uiManager)
+
+    while uiManager.isRunning():
         for event in pygame.event.get():
-            # print('pygame event', event)
             if event.type == pygame.QUIT:
-                # running = False
-                # pygame.quit()
+                uiManager.quit()
+                return
                 pass
             elif event.type == pygame.MOUSEMOTION:
-                # print('pygame event', event)
-                mouseLastMotion = 3
+                mouseLastMotion = pygame.time.get_ticks()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # print('pygame event', event)
+                mouseLastMotion = pygame.time.get_ticks()
                 uiManager.current().onMouseDown(event)
-                # running = False
-                # pygame.quit()
                 pass
-            # elif event.type == pygame.KEYDOWN:
-            #     running = False
-            #     pygame.quit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                mouseLastMotion = pygame.time.get_ticks()
+                if mouseIsVisible():
+                    pos = pygame.mouse.get_pos()
+                    if SIDE_MENU_RECT.collidepoint(pos):
+                        if uiManager.current().__class__.__name__ == MenuUI_name:
+                            pass
+                        else:
+                            gotoMenu()
+                            continue
+                uiManager.current().onMouseUp(event)
+                pass
 
-        pygame.mouse.set_visible( mouseLastMotion > 0 )
+        pygame.mouse.set_visible( mouseIsVisible() )
 
         checkGPIOKey(gpioKeyPush, gpioKeyRelease, gpioKeyLongPress)
 
-        if not running:
+        if not uiManager.isRunning():
             break
 
         uiManager.update()
@@ -257,6 +308,8 @@ def main():
 
         pygame.display.update()
         game_clock.tick(60)
+
+    pygame.quit()
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from ui.core import UIManager, BaseUI
 from ui.theme import *
 from utils.stepper import Stepper
 from utils.sysinfo import *
+from utils import runAsync
 
 logger = logging.getLogger('ui.clock')
 
@@ -32,6 +33,12 @@ class ClockUI(BaseUI):
     prevSecondIntValue = 0
     RX_RATE = 0
     TX_RATE = 0
+
+    lastCpuInfo = readCpuInfo()
+    cpuUse = 0
+    memInfo = get_mem_info()
+    dskInfo = get_disk_info()
+    hostIp = get_host_ip()
 
     cputemp = None
 
@@ -58,6 +65,7 @@ class ClockUI(BaseUI):
         self.cputemp = cputempf()
         self.rx()
         self.tx()
+        self.lastCpuInfo = readCpuInfo()
         pass
 
     def on_hidden(self):
@@ -80,7 +88,7 @@ class ClockUI(BaseUI):
         elif self.netRect.collidepoint(pygame.mouse.get_pos()):
             self.netShowType.next()
 
-    def update(self):
+    def update(self, surface = None):
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]
@@ -113,11 +121,19 @@ class ClockUI(BaseUI):
             self.RX_RATE = round((RX - RX_O)/1024/1024,3)
             self.TX_RATE = round((TX - TX_O)/1024/1024,3)
 
-        cpuUse = str(getCpuUsage()) # getCPUuse()
-        memInfo = get_mem_info()
+            cpuInfo = readCpuInfo()
+            self.cpuUse = str(round(calcCpuUsage(self.lastCpuInfo, cpuInfo), 1)) # getCPUuse()
+            self.lastCpuInfo = cpuInfo
+
+            self.memInfo = get_mem_info()
+            self.dskInfo = get_disk_info()
+            self.hostIp = get_host_ip()
+
+        cpuUse = self.cpuUse
+        memInfo = self.memInfo
         memStr = "MEM {0}M".format(memInfo['free'])
         memUse = str(memInfo['percent'])
-        dskInfo = get_disk_info()
+        dskInfo = self.dskInfo
         dskStr = "DSK {0}".format(dskInfo['free'])
         dskUse = str(dskInfo['percent'])
 
@@ -143,7 +159,7 @@ class ClockUI(BaseUI):
 
         if self.sysInfoShowType.current() == 0:
             sysText = smallFont.render(self.cputemp, True, color_white)
-            sysUseText = smallFont.render(cpuUse + '%', True, color_white)
+            sysUseText = smallFont.render(str(cpuUse) + '%', True, color_white)
         if self.sysInfoShowType.current() == 1:
             sysText = smallFont.render(memStr, True, color_white)
             sysUseText = smallFont.render(memUse + '%', True, color_white)
@@ -153,7 +169,7 @@ class ClockUI(BaseUI):
         netSpeedInText = tinyFont.render('' + str(self.RX_RATE) + ' M/s', True, color_green if self.RX_RATE > 0 else color_white)
         netSpeedOutText = tinyFont.render('' + str(self.TX_RATE) + ' M/s', True, color_green if self.TX_RATE > 0 else color_white)
 
-        ip = get_host_ip()
+        ip = self.hostIp
         ipText = miniFont.render(ip, True, color_white)
         
         surface.blit(sysText, (10,0))
@@ -167,11 +183,11 @@ class ClockUI(BaseUI):
         surface.blit(dayText,(170,86))
 
         if self.netShowType.current() == 1:
-            surface.blit(netSpeedOutText, (window_width - netSpeedOutText.get_width(), 112))
-            surface.blit(netSpeedInText, (window_width / 2 - netSpeedInText.get_width(), 112))
+            surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width(), 112))
+            surface.blit(netSpeedOutText, (window_width / 2 - netSpeedOutText.get_width(), 112))
         else:
             surface.blit(ipText,(10, 112))
-            surface.blit(netSpeedOutText, (window_width - netSpeedOutText.get_width(), 112))
+            surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width(), 112))
         
         self.prevSecondIntValue = secondIntValue
         # welcomeTxt = bigFont.render(ClockUI.__name__, True, color_white)

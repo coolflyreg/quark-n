@@ -81,10 +81,11 @@ ledUser.close()
 1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
 2. 运行如下命令进行安装
    ```bash
-    mkdir /home/pi/WorkSpace/Clock/logs
-    sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable ui_clock
+   sudo python -m pip install -r requirements.txt
+   mkdir /home/pi/WorkSpace/Clock/logs
+   sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable ui_clock
    ```
 3. 命令提示：
    1. 启动 （手动启动后按Ctrl + C可脱离）
@@ -112,9 +113,10 @@ ledUser.close()
 2. 鼠标操作
    1. 点击界面元素，会有变化，不同界面有不同反应
 3. 界面说明
-   1. 欢迎界面
+   1. 除了菜单界面的，任意界面，将鼠标移动到最左侧，将显示进入菜单的提示，点击鼠标即可进入菜单界面
+   2. 欢迎界面
       1. 无任何操作，定时跳转到数字表盘
-   2. 数字表盘界面
+   3. 数字表盘界面
       1. 界面元素，分为4行
          1. 第一行循环显示，鼠标可点击
             1. CPU温度 + CPU占比
@@ -126,16 +128,39 @@ ledUser.close()
             1. IP + 下载速度
             2. 上行速度 + 下载速度
       2. GPIO单按，同时循环以上所有元素
-   3. 菜单界面，任意界面长按 大于等于 3秒 和 小于 5秒之间，界面显示Menu View，进入到菜单界面
-      1. 界面元素目前只有时钟有效
+   4. 菜单界面，任意界面长按 大于等于 3秒 和 小于 5秒之间，界面显示Menu View，进入到菜单界面
+      1. 界面元素
          1. 时钟：切换到数字表盘
+         2. 孙悟空：开启关闭wukong-robot。需要修改后的悟空版本。参见 https://gitee.com/coolflyreg163/wukong-in-quark-n
+         3. 相机：可以支持PS3 Eye摄像头进行拍照，或者其他USB免驱动摄像头
+         4. 相册：可以查看通过摄像头拍摄的照片
+         5. 启动画面：切换启动图
+         6. 设置：正在开发中
+         7. 关闭：退出ui_clock
       2. GPIO操作
          1. 长按 大于等于 2秒 和 小于 3秒之间，界面显示YES时，执行确认操作
       3. 其他功能正在开发中
 
-#### 计划的功能
-- [ ] 切换启动欢迎图界面
+#### 功能列表
+- [X] 数字表盘
+- [X] 启动画面：切换启动欢迎图界面
+- [X] 相机：从USB摄像头拍照
+- [X] 相册：查看摄像头拍照的列表
+- [X] 孙悟空：集成wukong-robot，需细化功能需求
 - [ ] 加入MPU6050，进行姿态操作，增加甩飞Quark-N的几率
 - [ ] 实现设置界面的功能，可调整一些参数
-- [ ] 集成wukong-robot，需细化功能需求
 
+#### 与WuKong-robot共同使用
+**注意：需要先执行：Linux下声卡独占的原因和解决**
+1. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
+2. 替换掉 /home/pi/WorkSpace/WuKong/wukong-robot
+3. 把这个库里的 /WuKong/contrib/LcdDisplay 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
+4. 在 /home/pi/.wukong/config.yml 中添加配置。注意要复合格式
+```yaml
+quark_ui:
+      api_host: 'http://127.0.0.1:4096'
+      validate: '57b7d993ffbd75aca3fe2060cf204f93' 
+      enable: true
+```
+5. 目前snowboy的在线训练无法使用了，暂时在配置中改为：hotword: 'wukong.pmdl'，唤醒词：孙悟空
+6. 其他可以参考wukong-robot原版的配置

@@ -69,3 +69,7 @@ iOSInjectionProject/
 .DS_Store
 
 __pycache__/
+WorkSpace/Clock/fonts/PingFang.ttc
+WorkSpace/Clock/fonts/STHeiti Light.ttc
+WorkSpace/Clocl/logs/
+*.log
