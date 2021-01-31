@@ -24,6 +24,7 @@ class UIManager(metaclass=Singleton):
     __ui_dict = {}
     __ui_stack = []
     __dialog_stack = []
+    is_quit = False
 
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -40,8 +41,14 @@ class UIManager(metaclass=Singleton):
     def getWindowSize(self):
         return self.window_size
 
-    def quit(self):
+    def quit(self, send_signal = False):
+        if self.is_quit is True:
+            return
+        self.is_quit = True
+        for ui_name in self.__ui_dict:
+            self.__ui_dict[ui_name].on_destroy()
         self.running = False
+        os.kill(os.getpid(), signal.SIGINT)
 
     def isRunning(self):
         return self.running
@@ -82,7 +89,7 @@ class UIManager(metaclass=Singleton):
             self._currentDialog().update()
 
         for ui_name in self.__ui_dict:
-            if self.__ui_dict[ui_name] is not self.current():
+            if self.__ui_dict[ui_name] is not self._current():
                 self.__ui_dict[ui_name].update_offscreen()
 
     def current(self):
@@ -239,6 +246,9 @@ class BaseUI:
         pass
 
     def on_hidden(self):
+        pass
+
+    def on_destroy(self):
         pass
 
     pass

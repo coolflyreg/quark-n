@@ -175,7 +175,7 @@ class MenuUI(BaseUI):
 
         if self.ICONS[self.current_index].name == 'close':
             os.system("ttyecho -n /dev/tty1 echo 'User exited LCD UI'")
-            UIManager().quit()
+            UIManager().quit(send_signal=True)
 
     def update(self, surface = None):
         if surface is None:
@@ -222,14 +222,14 @@ class MenuUI(BaseUI):
                     right2_img = pygame.transform.scale(self.ICON_IMGS[icon_index + 2], self.smallIconSize)
                 elif (icon_index + 1) < len(self.ICON_IMGS):
                     right2_img = pygame.transform.scale(self.ICON_IMGS[0], self.smallIconSize)
-                else:
+                elif len(self.ICON_IMGS) > 1:
                     right2_img = pygame.transform.scale(self.ICON_IMGS[1], self.smallIconSize)
             if self.direction == -1:
                 if (icon_index - 2) >= 0:
                     left2_img = pygame.transform.scale(self.ICON_IMGS[icon_index - 2], self.smallIconSize)
                 elif (icon_index - 1) >= 0:
                     left2_img = pygame.transform.scale(self.ICON_IMGS[len(self.ICON_IMGS) - 1], self.smallIconSize)
-                else:
+                elif len(self.ICON_IMGS) > 1:
                     left2_img = pygame.transform.scale(self.ICON_IMGS[len(self.ICON_IMGS) - 2], self.smallIconSize)
 
         current_text = None
