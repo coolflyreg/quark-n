@@ -27,7 +27,7 @@ class WelcomeUI(BaseUI):
     def on_hidden(self):
         pass
 
-    def update(self):
+    def update(self, surface = None):
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]

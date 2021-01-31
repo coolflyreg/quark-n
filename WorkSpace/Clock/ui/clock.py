@@ -88,7 +88,7 @@ class ClockUI(BaseUI):
         elif self.netRect.collidepoint(pygame.mouse.get_pos()):
             self.netShowType.next()
 
-    def update(self):
+    def update(self, surface = None):
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]

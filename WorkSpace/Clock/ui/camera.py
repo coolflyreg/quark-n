@@ -129,7 +129,7 @@ class CameraUI(MenuUI):
         except Error as e:
             print('take picture error', e)
 
-    def update(self):
+    def update(self, surface = None):
 
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()

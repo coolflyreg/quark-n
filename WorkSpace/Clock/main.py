@@ -71,6 +71,7 @@ LongPressSecondsState = [False, False, False]
 
 def gotoMenu():
     from ui.menu import MenuUI
+    uiManager.closeAllDialog()
     uiManager.replace(uiManager.get(MenuUI.__name__), root=True)
 
 def flashLed():

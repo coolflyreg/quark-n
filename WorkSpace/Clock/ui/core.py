@@ -23,6 +23,7 @@ class UIManager(metaclass=Singleton):
     robotUI = None
     __ui_dict = {}
     __ui_stack = []
+    __dialog_stack = []
 
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -41,15 +42,7 @@ class UIManager(metaclass=Singleton):
 
     def quit(self):
         self.running = False
-        # os.kill(os.getpid(), signal.SIGINT)
-        # try:
-        #     # os.kill()
-        #     sys.exit(0)
-        # except:
-        #     print('sys.exit(0)')
-        #     pass
-        # sys.exit(0)
-    
+
     def isRunning(self):
         return self.running
 
@@ -77,7 +70,7 @@ class UIManager(metaclass=Singleton):
         self.__ui_dict[WuKongMenuUI.__name__].show()
         pass
 
-    def update(self):
+    def update(self, surface = None):
         if not self.running:
             return
         if self._current() is not None:
@@ -85,11 +78,16 @@ class UIManager(metaclass=Singleton):
 
         self.robotUI.update()
 
+        if self._currentDialog() is not None:
+            self._currentDialog().update()
+
         for ui_name in self.__ui_dict:
             if self.__ui_dict[ui_name] is not self.current():
                 self.__ui_dict[ui_name].update_offscreen()
 
     def current(self):
+        if self._currentDialog() is not None:
+            return self._currentDialog()
         if self.robotUI.is_showing():
             return self.robotUI
         if len(self.__ui_stack) == 0:
@@ -115,6 +113,32 @@ class UIManager(metaclass=Singleton):
         self.pop()
         ui.show()
         # self.push(ui)
+        pass
+
+    def _currentDialog(self):
+        if len(self.__dialog_stack) == 0:
+            return None
+        return self.__dialog_stack[-1:][0]
+
+    def pushDialog(self, ui):
+        self.__dialog_stack.append(ui)
+        pass
+
+    def popDialog(self):
+        return self.__dialog_stack.pop()
+
+    def replaceDialog(self, ui, root=False):
+        if root is True:
+            while len(self.__dialog_stack) > 1:
+                self.popDialog()
+        self.popDialog()
+        ui.show()
+        # self.push(ui)
+        pass
+
+    def closeAllDialog(self):
+        while len(self.__dialog_stack) > 0:
+            self.popDialog()
         pass
 
     def get(self, ui_name):
@@ -162,7 +186,7 @@ class BaseUI:
     def paint(self):
         pass
 
-    def update(self):
+    def update(self, surface = None):
         pass
 
     def update_offscreen(self):
@@ -186,25 +210,26 @@ class BaseUI:
     def onKeyLongPress(self, escapedSeconds):
         pass
 
-    def __show(self):
-        ui_manager = UIManager()
+    def _show(self):
+        # print('BaseUI _show')
         self.on_shown()
 
     def show(self):
+        # print('BaseUI show')
         ui_manager = UIManager()
         ui_manager.push(self)
-        self.__show()
+        self._show()
 
     def replace_current(self):
         ui_manager = UIManager()
         ui_manager.replace(self)
-        self.__show()
+        self._show()
 
     def hide(self):
         ui_manager = UIManager()
         ui_manager.pop()
         self.on_hidden()
-        ui_manager.current().__show()
+        ui_manager.current()._show()
 
     def on_shown(self):
         if self.controls is not None:

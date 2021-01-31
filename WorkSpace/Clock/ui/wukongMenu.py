@@ -10,6 +10,7 @@ import pygame
 from ui.core import UIManager, BaseUI
 from ui.menu import IconAction, MenuUI
 from ui.theme import *
+from ui.dialog import *
 from system.config import Config
 
 logger = logging.getLogger('ui.wukongMenu')
@@ -58,7 +59,7 @@ class WuKongMenuUI(MenuUI):
             self.proc.kill()
         pass
 
-    def update(self):
+    def update(self, surface = None):
         super().update()
 
         surface = UIManager().getSurface()

@@ -51,7 +51,7 @@ class LaunchersUI(BaseUI):
             Config().set('user-interface.launcher.current', self.target_index)
             Config().save()
 
-    def update(self):
+    def update(self, surface = None):
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]

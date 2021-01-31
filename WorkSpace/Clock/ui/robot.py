@@ -146,7 +146,7 @@ class RobotUI(BaseUI):
         #         return True
         return False
 
-    def update(self):
+    def update(self, surface = None):
         surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]

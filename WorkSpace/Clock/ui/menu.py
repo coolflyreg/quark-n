@@ -49,7 +49,7 @@ class MenuUI(BaseUI):
 
     smallIconSize = (40, 40)
     normalIconSize = (100, 100)
-    drawBackground = False
+    drawBackground = False    
 
     def __init__(self, ui_index):
         super().__init__(ui_index)
@@ -177,8 +177,9 @@ class MenuUI(BaseUI):
             os.system("ttyecho -n /dev/tty1 echo 'User exited LCD UI'")
             UIManager().quit()
 
-    def update(self):
-        surface = UIManager().getSurface()
+    def update(self, surface = None):
+        if surface is None:
+            surface = UIManager().getSurface()
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]
         window_height = windowSize[1]
