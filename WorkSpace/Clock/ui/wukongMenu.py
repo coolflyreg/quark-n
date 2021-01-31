@@ -25,6 +25,7 @@ class WuKongMenuUI(MenuUI):
     drawBackground = True
     wukongIndicator = None
     is_destroy = False
+    proc = None
 
     def __init__(self, ui_index):
         super().__init__(ui_index)
@@ -84,7 +85,7 @@ class WuKongMenuUI(MenuUI):
                 print('WuKong Process is exited with code:', self.proc.poll())
                 self.proc = None
                 break
-            self.killallWukong()
+        self.killallWukong()
         if self.is_destroy is False:
             self.hide()
         pass
