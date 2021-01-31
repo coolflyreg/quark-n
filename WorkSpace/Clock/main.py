@@ -13,7 +13,7 @@ from ui.core import UIManager
 from periphery import GPIO
 from periphery import LED
 import _thread
-from server import server
+from server import service
 from utils import *
 
 # print('fontfile path: ', os.getcwd(), sys.path)
@@ -52,6 +52,7 @@ window_size=(w,h)
 
 game_surface = pygame.display.set_mode(window_size, pygame.FULLSCREEN)
 pygame.mouse.set_visible( False )
+mouseLastMotion = 0
 
 uiManager = UIManager()
 uiManager.setWindowSize(window_size)
@@ -67,6 +68,10 @@ gpio_push_count = 0
 
 LongPressSeconds = (2,5,10)
 LongPressSecondsState = [False, False, False]
+
+def gotoMenu():
+    from ui.menu import MenuUI
+    uiManager.replace(uiManager.get(MenuUI.__name__), root=True)
 
 def flashLed():
     # print('flash led')
@@ -141,8 +146,7 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
         # pass
     if isLongPress: 
         if longPressSeconds > 2 and longPressSeconds < 5:
-            from ui.menu import MenuUI
-            uiManager.get(MenuUI.__name__).show()
+            gotoMenu()
             pass
     ledUser.write(0)
     pass
@@ -168,6 +172,10 @@ def gpioKeyLongPress(escapedSeconds):
         
     pass
 
+def mouseIsVisible():
+    global mouseLastMotion
+    return (pygame.time.get_ticks() - mouseLastMotion) < 3000
+
 def drawLongPressStateView(escaped_push_time, current_x, bg_color):
     powerTxt = bigFont.render('POWER', True, color_black)
     offTxt = bigFont.render('OFF', True, color_black)
@@ -180,6 +188,7 @@ def drawLongPressStateView(escaped_push_time, current_x, bg_color):
     screenTxt = None
 
     long_press_second = int(escaped_push_time / 1000)
+
     if current_x > power_x and escaped_push_time >= 5000:
         powerOffRemain = miniFont.render(str(10 - long_press_second), True, color_black)
         pass
@@ -222,6 +231,17 @@ def drawLongPressState():
         if (current_PowerOff_x < 0):
             current_PowerOff_x = 0
 
+    if mouseIsVisible():
+        pos = pygame.mouse.get_pos()
+        if SIDE_MENU_RECT.collidepoint(pos):
+            from ui.menu import MenuUI
+            if uiManager.current().__class__.__name__ == MenuUI.__name__:
+                escaped_push_time = 2500
+            else:
+                escaped_push_time = 3500
+            current_PowerOff_x = w * (escaped_push_time / 10000)
+        pass
+
     if (current_PowerOff_x > 0):
         drawLongPressStateView(escaped_push_time, current_PowerOff_x, (255, 0, 0) if escaped_push_time < 2000 else (0, 255, 0))
     pass
@@ -229,7 +249,7 @@ def drawLongPressState():
 
 def _signal_handler(signal, frame):
     global uiManager, ledUser, gpio_key
-    server.stop_server()
+    service.stop_server()
     # time.sleep(1)
     # print('threading.active_count() =', threading.active_count())
     # dumpThreads('_signal_handler')
@@ -239,13 +259,15 @@ def _signal_handler(signal, frame):
     
 
 def main():
+    from ui.menu import MenuUI
     global uiManager
-    mouseLastMotion = 0
-    
+    global mouseLastMotion
+
+    MenuUI_name = MenuUI.__name__
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
-    server.run(uiManager)
+    service.run(uiManager)
 
     while uiManager.isRunning():
         for event in pygame.event.get():
@@ -261,10 +283,18 @@ def main():
                 pass
             elif event.type == pygame.MOUSEBUTTONUP:
                 mouseLastMotion = pygame.time.get_ticks()
+                if mouseIsVisible():
+                    pos = pygame.mouse.get_pos()
+                    if SIDE_MENU_RECT.collidepoint(pos):
+                        if uiManager.current().__class__.__name__ == MenuUI_name:
+                            pass
+                        else:
+                            gotoMenu()
+                            continue
                 uiManager.current().onMouseUp(event)
                 pass
 
-        pygame.mouse.set_visible( (pygame.time.get_ticks() - mouseLastMotion) < 3000 )
+        pygame.mouse.set_visible( mouseIsVisible() )
 
         checkGPIOKey(gpioKeyPush, gpioKeyRelease, gpioKeyLongPress)
 

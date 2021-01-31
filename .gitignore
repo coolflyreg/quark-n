@@ -69,3 +69,5 @@ iOSInjectionProject/
 .DS_Store
 
 __pycache__/
+WorkSpace/Clocl/logs/
+*.log

@@ -72,9 +72,9 @@ class UIManager(metaclass=Singleton):
         self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
         self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
 
-        self.__ui_dict[WelcomeUI.__name__].show()
+        # self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
-        # self.__ui_dict[CameraUI.__name__].show()
+        self.__ui_dict[WuKongMenuUI.__name__].show()
         pass
 
     def update(self):
@@ -108,9 +108,13 @@ class UIManager(metaclass=Singleton):
     def pop(self):
         return self.__ui_stack.pop()
 
-    def replace(self, ui):
+    def replace(self, ui, root=False):
+        if root is True:
+            while len(self.__ui_stack) > 1:
+                self.pop()
         self.pop()
-        self.push(ui)
+        ui.show()
+        # self.push(ui)
         pass
 
     def get(self, ui_name):
@@ -181,32 +185,6 @@ class BaseUI:
 
     def onKeyLongPress(self, escapedSeconds):
         pass
-
-    # def process_cmds(self, cmds):
-    #     if len(cmds) <= 0:
-    #         return False
-
-    #     if self.controls is not None:
-    #         for c in self.controls:
-    #             if c.process_cmds(cmds):
-    #                 return True
-
-    #     for serial_cmd in cmds:
-    #         if len(serial_cmd) > 3 and serial_cmd[:3] == 'BN:':
-    #             try:
-    #                 btn_index = int(serial_cmd[3:])
-    #                 self.logger.info("Release BN {0}".format(btn_index))
-    #             except ValueError as e:
-    #                 self.logger.warning('Error cmd: {0}'.format(serial_cmd))
-
-    #         if len(serial_cmd) > 3 and serial_cmd[:3] == 'BS:':
-    #             try:
-    #                 btn_index = int(serial_cmd[3:])
-    #                 self.logger.info("Press BS {0}".format(btn_index))
-    #             except ValueError as e:
-    #                 self.logger.warning('Error cmd: {0}'.format(serial_cmd))
-
-    #     return False
 
     def __show(self):
         ui_manager = UIManager()

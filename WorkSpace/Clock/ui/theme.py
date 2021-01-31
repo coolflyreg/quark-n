@@ -23,3 +23,5 @@ color_white = (255,255,255)
 color_black = (0,0,0)
 color_green = (0,255,0)
 color_red = (255,0,0)
+
+SIDE_MENU_RECT = pygame.Rect(0, 10, 5, 115)

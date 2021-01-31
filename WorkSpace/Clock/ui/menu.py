@@ -49,6 +49,7 @@ class MenuUI(BaseUI):
 
     smallIconSize = (40, 40)
     normalIconSize = (100, 100)
+    drawBackground = False
 
     def __init__(self, ui_index):
         super().__init__(ui_index)
@@ -56,6 +57,16 @@ class MenuUI(BaseUI):
 
     def set_icons(self, icons):
         self.ICONS = icons
+        icon_imgs = []
+        for iconAct in self.ICONS:
+            icon_imgs.append(
+                pygame.transform.scale(
+                    pygame.image.load(
+                        os.path.join(sys.path[0], 'images/icon_set3', iconAct.img))
+                    , self.normalIconSize))
+        self.current_index = 0
+        self.target_index = 0
+        self.ICON_IMGS = icon_imgs
 
     def on_shown(self):
         self.showTick = pygame.time.get_ticks()
@@ -135,7 +146,7 @@ class MenuUI(BaseUI):
             else:
                 self.target_index = self.target_index + 1
             return
-        if centerRect.collidepoint(event.pos):
+        if centerRect.collidepoint(event.pos) or SIDE_MENU_RECT.collidepoint(event.pos):
             # print("click center icon")
             self.executeAction()
             return
@@ -171,7 +182,7 @@ class MenuUI(BaseUI):
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]
         window_height = windowSize[1]
-        if self.__class__.__name__ == MenuUI.__name__:
+        if self.__class__.__name__ == MenuUI.__name__ or self.drawBackground is True:
             surface.fill(color_black)
 
         escapedTime = pygame.time.get_ticks() - self.animationPrevTick
