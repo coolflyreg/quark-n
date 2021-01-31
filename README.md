@@ -175,3 +175,7 @@ quark_ui:
 ```
 5. 目前snowboy的在线训练无法使用了，暂时在配置中改为：hotword: 'wukong.pmdl'，唤醒词：孙悟空
 6. 其他可以参考wukong-robot原版的配置
+7. 如果需要使用悟空进行拍照，需要安装fswebcam，运行如下命令安装
+   ```
+   sudo apt-get install fswebcam
+   ```
