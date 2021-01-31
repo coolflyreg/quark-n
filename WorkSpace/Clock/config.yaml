@@ -46,7 +46,10 @@ robot:
   show_delay: 10000
   # 悟空设置
   wukong:
+    # 悟空的根目录
     root: /home/pi/WorkSpace/WuKong/wukong-robot
+    # 是否在启动以后自动启动悟空
+    auto-start: false
 
 # 界面设置
 user-interface:

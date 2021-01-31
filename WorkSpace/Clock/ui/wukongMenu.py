@@ -35,6 +35,12 @@ class WuKongMenuUI(MenuUI):
             pygame.image.load(
                 os.path.join(sys.path[0], 'images/icon_set3', 'wukong.png')), (15, 15))
     
+    def on_create(self):
+        super().on_create()
+        if bool(Config().get('robot.wukong.auto-start', False)) is True:
+            self.startWuKong(is_auto_start = True)
+        pass
+
     def on_shown(self):
         if self.proc is None:
             icons = [
@@ -54,10 +60,7 @@ class WuKongMenuUI(MenuUI):
             print('wukong stop')
             self.stopWuKong()
 
-    def _startWuKong(self, cmd):
-        pass
-
-    def startWuKong(self):
+    def startWuKong(self, is_auto_start = False):
         wukongRoot = Config().get('robot.wukong.root')
         
         cmd = [os.path.join(sys.path[0], 'wukong.sh'), wukongRoot]
@@ -66,7 +69,8 @@ class WuKongMenuUI(MenuUI):
         if self.proc is None:
             os.system('chmod +x "{}"'.format(cmd[0]))
             self.proc = subprocess.Popen(cmd, shell=False, cwd=wukongRoot)#, stdout=subprocess.PIPE, stderr=subprocess.PIPE)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        self.hide()
+        if is_auto_start is False:
+            self.hide()
         pass
 
     def stopWuKong(self):
