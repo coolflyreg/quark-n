@@ -79,15 +79,21 @@ ledUser.close()
 ### 用于自带LCD屏的Clock（由群内大神 “海 风” 提供原始程序）
 **需要先执行：使用新的dts的中的蓝色led设备**
 1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
-2. 运行如下命令进行安装
+2. 从这里，下载2个字体文件：“STHeiti Light.ttc”，“PingFang.ttc”
+   ```
+   https://gitee.com/coolflyreg163/quark-n/releases/Fonts
+   ```
+3. 将字体文件拷贝到 /home/pi/WorkSpace/Clock/fonts/ 目录下
+4. 运行如下命令进行安装
    ```bash
+   cd /home/pi/WorkSpace/Clock/
    sudo python -m pip install -r requirements.txt
    mkdir /home/pi/WorkSpace/Clock/logs
    sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable ui_clock
    ```
-3. 命令提示：
+5. 命令提示：
    1. 启动 （手动启动后按Ctrl + C可脱离）
         ```bash
         sudo systemctl start ui_clock
@@ -154,8 +160,13 @@ ledUser.close()
 **注意：需要先执行：Linux下声卡独占的原因和解决**
 1. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
 2. 替换掉 /home/pi/WorkSpace/WuKong/wukong-robot
-3. 把这个库里的 /WuKong/contrib/LcdDisplay 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
-4. 在 /home/pi/.wukong/config.yml 中添加配置。注意要复合格式
+3. 执行如下命令：
+   ```bash
+   mkdir /home/pi/WorkSpace/WuKong/wukong-robot/temp
+   chmod 777 /home/pi/WorkSpace/WuKong/wukong-robot/temp
+   ```
+4. 把这个库里的 /WuKong/contrib/LcdDisplay 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
+5. 在 /home/pi/.wukong/config.yml 中添加配置。注意要符合格式
 ```yaml
 quark_ui:
       api_host: 'http://127.0.0.1:4096'
