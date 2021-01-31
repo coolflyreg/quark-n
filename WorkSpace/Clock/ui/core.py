@@ -65,9 +65,9 @@ class UIManager(metaclass=Singleton):
         self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
         self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
 
-        # self.__ui_dict[WelcomeUI.__name__].show()
+        self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
-        self.__ui_dict[WuKongMenuUI.__name__].show()
+        # self.__ui_dict[WuKongMenuUI.__name__].show()
         pass
 
     def update(self, surface = None):
