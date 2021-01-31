@@ -61,10 +61,23 @@ class WuKongMenuUI(MenuUI):
     def update(self):
         super().update()
 
+        surface = UIManager().getSurface()
+        windowSize = UIManager().getWindowSize()
+        window_width = windowSize[0]
+        window_height = windowSize[1]
+
+        current_text = None
         if self.proc is not None:
             if self.proc.poll() is not None:
                 print('WuKong Process is exited with code:', self.proc.poll())
                 self.proc = None
+            else:
+                current_text = zhMiniFont.render('WuKong已启动', True, color_white)
+        else:
+            current_text = zhMiniFont.render('WuKong没有启动', True, color_white)
+
+        if current_text is not None:
+            surface.blit(current_text, (window_width / 2 - current_text.get_width() / 2, 0))
         pass
     
     pass
