@@ -161,6 +161,10 @@ hw.snd.maxautovchans=4
         ```bash
         sudo systemctl status ui_clock
         ```
+   4. 重启系统
+        ```bash
+        sudo shutdown -r now
+        ```
 
 #### 操作方式
 1. GPIO按钮操作
