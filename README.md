@@ -58,58 +58,87 @@ hw.snd.maxautovchans=4
 3. 3 Boot Options -> B3 Boot device -> D3 emmc
 
 ### 使用新的dts的中的蓝色led设备
-1. 将 sun8i-h3-atom_n.dtb 替换到 /boot/sun8i-h3-atom_n.dtb
-2. 重启
-3. Python代码
-```python
-from periphery import LED
-import time
-ledUser = LED("usr_led", True)
-while True:
-    time.sleep(1)
-    ledUser.write(255)
-    time.sleep(1)
-    ledUser.write(0)
-
-ledUser.close()
-```
-4. gpio_key_led.py是按下Key后，亮起蓝色led
-5. 在/sys/class/leds下，显示 pwr_led(黄), status_led(白), usr_led(蓝)
-
-### 用于自带LCD屏的数码时钟
-**需要先执行：使用新的dts的中的蓝色led设备**
 1. 下载源代码
-   ```
+   ```bash
    mkdir ~/GIT
    cd ~/GIT
    git clone https://gitee.com/coolflyreg163/quark-n.git 
    ```
-2. 备份之前的Clock
+2. 将 sun8i-h3-atom_n.dtb 替换到 /boot/sun8i-h3-atom_n.dtb
+   ```bash
+   cp ~/GIT/quark-n/sun8i-h3-atom_n.dtb /boot/
    ```
+3. 重启
+   ```bash
+   sudo shutdown -r now
+   ```
+4. 用于测试的Python代码，gpio_key_led.py
+   ```python
+   from periphery import LED
+   import time
+   ledUser = LED("usr_led", True)
+   while True:
+      time.sleep(1)
+      ledUser.write(255)
+      time.sleep(1)
+      ledUser.write(0)
+
+   ledUser.close()
+   ```
+4. gpio_key_led.py是按下Key后，亮起蓝色led
+5. 在/sys/class/leds下，显示 pwr_led(黄), status_led(白), usr_led(蓝)
+   ```bash
+   ls /sys/class/leds/
+   ```
+   或运行以下命令
+   ```bash
+   sudo cat /sys/kernel/debug/gpio
+   ```
+   输出结果里有一行
+   ```
+   gpio-359 (                    |usr_led             ) out hi
+   ```
+   即表示成功
+
+### 用于自带LCD屏的数码时钟
+**需要先执行：使用新的dts的中的蓝色led设备**
+1. 下载源代码
+   ```bash
+   mkdir ~/GIT
+   cd ~/GIT
+   git clone https://gitee.com/coolflyreg163/quark-n.git 
+   ```
+2. 如果很早之前已经下载过源代码，需要更新，可以运行如下命令（这一步非必须）
+   ```bash
+   cd ~/GIT/quark-n
+   git pull origin master
+   ```
+3. 备份之前的Clock
+   ```bash
    cd /home/pi/WorkSpace/
    mv Clock Clock_bak
    ```
-3. 将Clock放置到指定位置
-   ```
+4. 将Clock放置到指定位置
+   ```bash
    ln -s /home/pi/GIT/quark-n/WorkSpace/Clock ~/WorkSpace/
    ```
-4. 将启动脚本放置到指定位置
-   ```
+5. 将启动脚本放置到指定位置
+   ```bash
    mkdir -p ~/WorkSpace/Scripts/services
    ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/services/ui_clock.service ~/WorkSpace/Scripts/services/
    ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/start_ui_clock.sh ~/WorkSpace/Scripts/
    ```
-5. 从这里，下载2个字体文件：“STHeiti Light.ttc”，“PingFang.ttc”，拷贝到~/WorkSpace/Clock/fonts。
+6. 从这里，下载2个字体文件：“STHeiti Light.ttc”，“PingFang.ttc”，拷贝到~/WorkSpace/Clock/fonts。
    ```
    https://gitee.com/coolflyreg163/quark-n/releases/Fonts
    ```
    或运行命令
-   ```
+   ```bash
    cd ~/WorkSpace/Clock/fonts
    wget https://gitee.com/coolflyreg163/quark-n/attach_files/603438/download/STHeiti%20Light.ttc
    wget https://gitee.com/coolflyreg163/quark-n/attach_files/603439/download/PingFang.ttc
    ```
-6. 运行如下命令进行安装
+7. 运行如下命令进行安装
    ```bash
    cd /home/pi/WorkSpace/Clock/
    sudo python -m pip install -r requirements.txt
@@ -119,7 +148,7 @@ ledUser.close()
    sudo systemctl enable ui_clock
    ```
    **到达这一步，已经在重启后会自动启动。下面是手动命令**
-7. 命令提示：
+8. 命令提示：
    1. 启动 （手动启动后按Ctrl + C可脱离）
         ```bash
         sudo systemctl start ui_clock
@@ -185,12 +214,12 @@ ledUser.close()
 #### 与WuKong-robot共同使用
 **注意：需要先执行：Linux下声卡独占的原因和解决**
 1. 备份原始自带的WuKong
-   ```
+   ```bash
    cd /home/pi/WorkSpace/WuKong
    mv wukong-robot wukong-robot_bak
    ```
 2. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
-   ```
+   ```bash
    cd /home/pi/WorkSpace/WuKong
    git clone https://gitee.com/coolflyreg163/wukong-in-quark-n wukong-robot
    ```
@@ -200,7 +229,7 @@ ledUser.close()
    chmod 777 /home/pi/WorkSpace/WuKong/wukong-robot/temp
    ```
 4. 把这个库里的 /WuKong/contrib/LcdDisplay.py 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
-   ```
+   ```bash
    cp ~/GIT/quark-n/WuKong/contrib/LcdDisplay.py /home/pi/.wukong/contrib/
    ```
 5. 在 /home/pi/.wukong/config.yml 中添加配置。注意要符合格式
@@ -213,6 +242,6 @@ quark_ui:
 5. 目前snowboy的在线训练无法使用了，暂时在配置中改为：hotword: 'wukong.pmdl'，唤醒词：孙悟空
 6. 其他可以参考wukong-robot原版的配置
 7. 如果需要使用悟空进行拍照，需要安装fswebcam，运行如下命令安装
-   ```
+   ```bash
    sudo apt-get install fswebcam
    ```
