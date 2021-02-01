@@ -124,6 +124,7 @@ hw.snd.maxautovchans=4
    ```
 5. 将启动脚本放置到指定位置
    ```bash
+   chmod +x /home/pi/GIT/quark-n/WorkSpace/Scripts/start_ui_clock.sh
    mkdir -p ~/WorkSpace/Scripts/services
    ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/services/ui_clock.service ~/WorkSpace/Scripts/services/
    ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/start_ui_clock.sh ~/WorkSpace/Scripts/
