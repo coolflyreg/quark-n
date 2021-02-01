@@ -233,12 +233,12 @@ hw.snd.maxautovchans=4
    cp ~/GIT/quark-n/WuKong/contrib/LcdDisplay.py /home/pi/.wukong/contrib/
    ```
 5. 在 /home/pi/.wukong/config.yml 中添加配置。注意要符合格式
-```yaml
-quark_ui:
-    api_host: 'http://127.0.0.1:4096'
-    validate: '57b7d993ffbd75aca3fe2060cf204f93' 
-    enable: true
-```
+   ```yaml
+   quark_ui:
+      api_host: 'http://127.0.0.1:4096'
+      validate: '57b7d993ffbd75aca3fe2060cf204f93' 
+      enable: true
+   ```
 5. 目前snowboy的在线训练无法使用了，暂时在配置中改为：hotword: 'wukong.pmdl'，唤醒词：孙悟空
 6. 其他可以参考wukong-robot原版的配置
 7. 如果需要使用悟空进行拍照，需要安装fswebcam，运行如下命令安装
