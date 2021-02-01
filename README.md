@@ -76,15 +76,40 @@ ledUser.close()
 4. gpio_key_led.py是按下Key后，亮起蓝色led
 5. 在/sys/class/leds下，显示 pwr_led(黄), status_led(白), usr_led(蓝)
 
-### 用于自带LCD屏的Clock（由群内大神 “海 风” 提供原始程序）
+### 用于自带LCD屏的数码时钟
 **需要先执行：使用新的dts的中的蓝色led设备**
-1. 拷贝WorkSpace下的Clock和Script到 quark-n 的 /home/pi/WorkSpace/ 下
-2. 从这里，下载2个字体文件：“STHeiti Light.ttc”，“PingFang.ttc”
+1. 下载源代码
+   ```
+   mkdir ~/GIT
+   cd ~/GIT
+   git clone https://gitee.com/coolflyreg163/quark-n.git 
+   ```
+2. 备份之前的Clock
+   ```
+   cd /home/pi/WorkSpace/
+   mv Clock Clock_bak
+   ```
+3. 将Clock放置到指定位置
+   ```
+   ln -s /home/pi/GIT/quark-n/WorkSpace/Clock ~/WorkSpace/
+   ```
+4. 将启动脚本放置到指定位置
+   ```
+   mkdir -p ~/WorkSpace/Scripts/services
+   ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/services/ui_clock.service ~/WorkSpace/Scripts/services/
+   ln -s /home/pi/GIT/quark-n/WorkSpace/Scripts/start_ui_clock.sh ~/WorkSpace/Scripts/
+   ```
+5. 从这里，下载2个字体文件：“STHeiti Light.ttc”，“PingFang.ttc”，拷贝到~/WorkSpace/Clock/fonts。
    ```
    https://gitee.com/coolflyreg163/quark-n/releases/Fonts
    ```
-3. 将字体文件拷贝到 /home/pi/WorkSpace/Clock/fonts/ 目录下
-4. 运行如下命令进行安装
+   或运行命令
+   ```
+   cd ~/WorkSpace/Clock/fonts
+   wget https://gitee.com/coolflyreg163/quark-n/attach_files/603438/download/STHeiti%20Light.ttc
+   wget https://gitee.com/coolflyreg163/quark-n/attach_files/603439/download/PingFang.ttc
+   ```
+6. 运行如下命令进行安装
    ```bash
    cd /home/pi/WorkSpace/Clock/
    sudo python -m pip install -r requirements.txt
@@ -93,7 +118,8 @@ ledUser.close()
    sudo systemctl daemon-reload
    sudo systemctl enable ui_clock
    ```
-5. 命令提示：
+   **到达这一步，已经在重启后会自动启动。下面是手动命令**
+7. 命令提示：
    1. 启动 （手动启动后按Ctrl + C可脱离）
         ```bash
         sudo systemctl start ui_clock
@@ -136,7 +162,7 @@ ledUser.close()
       2. GPIO单按，同时循环以上所有元素
    4. 菜单界面，任意界面长按 大于等于 3秒 和 小于 5秒之间，界面显示Menu View，进入到菜单界面
       1. 界面元素
-         1. 时钟：切换到数字表盘
+         1. 时钟：切换到数字表盘（由群内大神 “海 风” 提供原始Clock界面程序）
          2. 孙悟空：开启关闭wukong-robot。需要修改后的悟空版本。参见 https://gitee.com/coolflyreg163/wukong-in-quark-n
          3. 相机：可以支持PS3 Eye摄像头进行拍照，或者其他USB免驱动摄像头
          4. 相册：可以查看通过摄像头拍摄的照片
@@ -158,14 +184,25 @@ ledUser.close()
 
 #### 与WuKong-robot共同使用
 **注意：需要先执行：Linux下声卡独占的原因和解决**
-1. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
-2. 替换掉 /home/pi/WorkSpace/WuKong/wukong-robot
-3. 执行如下命令：
+1. 备份原始自带的WuKong
+   ```
+   cd /home/pi/WorkSpace/WuKong
+   mv wukong-robot wukong-robot_bak
+   ```
+2. 从 https://gitee.com/coolflyreg163/wukong-in-quark-n 下载WuKong
+   ```
+   cd /home/pi/WorkSpace/WuKong
+   git clone https://gitee.com/coolflyreg163/wukong-in-quark-n wukong-robot
+   ```
+3. 创建所需目录，执行如下命令：
    ```bash
    mkdir /home/pi/WorkSpace/WuKong/wukong-robot/temp
    chmod 777 /home/pi/WorkSpace/WuKong/wukong-robot/temp
    ```
-4. 把这个库里的 /WuKong/contrib/LcdDisplay 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
+4. 把这个库里的 /WuKong/contrib/LcdDisplay.py 替换到 /home/pi/.wukong/contrib/ 文件夹下的同名文件
+   ```
+   cp ~/GIT/quark-n/WuKong/contrib/LcdDisplay.py /home/pi/.wukong/contrib/
+   ```
 5. 在 /home/pi/.wukong/config.yml 中添加配置。注意要符合格式
 ```yaml
 quark_ui:
