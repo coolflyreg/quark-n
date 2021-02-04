@@ -79,9 +79,12 @@ class UIManager(metaclass=Singleton):
 
     def update(self, surface = None):
         if not self.running:
+            print('UIManager is not running')
             return
         if self._current() is not None:
             self._current().update()
+        else: 
+            logger.warn('Can\'t get current ui')
 
         self.robotUI.update()
 
@@ -114,10 +117,13 @@ class UIManager(metaclass=Singleton):
         return self.__ui_stack.pop()
 
     def replace(self, ui, root=False):
+        current = self._current()
         if root is True:
             while len(self.__ui_stack) > 1:
                 self.pop()
         self.pop()
+        if current is not None:
+            current.on_hidden()
         ui.show()
         # self.push(ui)
         pass
@@ -172,6 +178,7 @@ class BaseUI:
     """
 
     ui_index = 0
+    __cache = None
 
     controls = None
 
@@ -179,6 +186,7 @@ class BaseUI:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ui_index = ui_index
         self.event_dispatcher = EventDispatcher()
+        self.__cache = {}
         self.on_create()
 
     def on_create(self):
@@ -245,10 +253,21 @@ class BaseUI:
                 c.paint()
         pass
 
+    def get_cache(self, key, callback):
+        if callback is None:
+            return None
+        val = self.__cache.get(key)
+        if val is not None:
+            return val
+        val = callback()
+        self.__cache[key] = val
+        return val
+
     def on_hidden(self):
         pass
 
     def on_destroy(self):
+        self.__cache = {}
         pass
 
     pass

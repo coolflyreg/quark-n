@@ -31,6 +31,24 @@ server_ioloop = None
 # http_server = None
 
 class BaseHandler(tornado.web.RequestHandler):
+    logger = None
+
+    def getLogger(self):
+        if self.logger is None:
+            self.logger = logging.getLogger('server.{}'.format(self.__class__.__name__))
+        return self.logger
+
+    def initialize(self):
+        self.getLogger()
+        pass
+
+    def prepare(self):
+        # self.request.method,
+        # self.request.uri,
+        # self.request.remote_ip,
+        # self.getLogger().debug('request: {}'.format(self._request_summary()))
+        self._request_summary()
+        pass
     def isValidated(self):
         if not self.get_secure_cookie('validation'):
             return False
@@ -86,7 +104,7 @@ class RobotWakeUpHandler(BaseHandler):
         else:
             res = {'code': 0, 'message': 'ok'}
             if uiManager is None:
-                print('uiManager is none')
+                logger.warn('uiManager is none')
             uiManager.robotWakeUp()
             self.write(json.dumps(res))
         self.finish()
@@ -114,7 +132,7 @@ class LoginHandler(BaseHandler):
         if self.get_argument('username') == Config().get('server.username') and \
            hashlib.md5(self.get_argument('password').encode('utf-8')).hexdigest() \
            == Config().get('server.validate'):
-            print('success')
+            self.getLogger().debug('success')
             self.set_secure_cookie("validation", Config().get('server.validate'))
             self.redirect("/")
         else:
@@ -164,7 +182,7 @@ def start_server(mgr, start_callback):
     global uiManager, http_server
     uiManager = mgr
     if Config().get('server.enable', False):
-        print('''
+        logger.info('''
             Web管理端：http://{}:{}
 '''.format(Config().get('server.host', '0.0.0.0'), Config().get('server.port', '4096')))
 
@@ -185,18 +203,18 @@ def start_server(mgr, start_callback):
         
 def _server_started(ioloop):
     global server_ioloop
-    # print('server started, ioloop ', ioloop)
+    # logger.debug('server started, ioloop %s', ioloop)
     server_ioloop = ioloop
 
 def stop_server():
     global server_ioloop
-    # print('stop server, server_ioloop:', server_ioloop)
+    # logger.debug('stop server, server_ioloop: %d', server_ioloop)
     # dumpThreads('stop server')
     if server_ioloop is not None:
-        # print('stop io_loop')
+        # logger.debug('stop io_loop')
         server_ioloop.add_callback(lambda: server_ioloop.stop())
     # dumpThreads('stopped server')
-    print('server stopped')
+    logger.info('server stopped')
 
 def run(uiManager):
     # pygame.register_quit(lambda: stop_server())

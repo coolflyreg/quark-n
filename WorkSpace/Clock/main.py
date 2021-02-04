@@ -3,18 +3,16 @@
 import os
 import sys
 import threading
+from ruamel.yaml import YAML
 import logging
 import logging.config
 import pygame
 import time
 import signal
-from system.config import Config
-from ui.core import UIManager
 from periphery import GPIO
 from periphery import LED
 import _thread
-from server import service
-from utils import *
+from system.config import Config
 
 # print('fontfile path: ', os.getcwd(), sys.path)
 os.chdir(sys.path[0])
@@ -22,8 +20,32 @@ if bool(Config().get('debug.remote')):
     import pydevd
     pydevd.settrace('192.168.1.88', port=31000, stdoutToServer=True, stderrToServer=True)
 
-logging.config.fileConfig('logging.conf')
+# logging.config.fileConfig('logging.conf')
+with open('logging.yaml', "r") as f:
+    yaml = YAML()
+    config = yaml.load(f)
+    logging.config.dictConfig(config)
+    log_colors_config = {
+        'DEBUG': 'white',  # cyan white
+        'INFO': 'green',
+        'WARNING': 'yellow',
+        'ERROR': 'red',
+        'CRITICAL': 'bold_red',
+    }
+
+from utils import *
+
+from server import service
+from ui.core import UIManager
+
+
 logger = logging.getLogger('main')
+
+logger.debug('debug log')
+logger.info('info log')
+logger.warn('warn log')
+logger.error('error log')
+logger.critical('critical log')
 
 gpio_key = GPIO("/dev/gpiochip1", 3, "in")
 ledUser = LED("usr_led", True)
@@ -39,7 +61,9 @@ writePid()
 if not os.getenv('SDL_FBDEV'):
     os.putenv('SDL_FBDEV', Config().get('display.device'))#利用quark自带tft屏幕显示
 
+logger.debug('pygame initing')
 pygame.init()
+logger.debug('pygame inited')
 pygame.mixer.quit()
 
 from ui.theme import *
@@ -75,7 +99,7 @@ def gotoMenu():
     uiManager.replace(uiManager.get(MenuUI.__name__), root=True)
 
 def flashLed():
-    # print('flash led')
+    # logger.debug('flash led')
     ledUser.write(255)
     time.sleep(0.1)
     ledUser.write(0)
@@ -88,6 +112,8 @@ def flashLed():
 
 def checkGPIOKey(onPush, onRelease, onLongPress):
     global prev_gpio_state, gpio_push_state, gpio_push_start, gpio_push_count, LongPressSeconds, LongPressSecondsState
+    if gpio_key is None:
+        return
     gpio_state = gpio_key.read()
     if prev_gpio_state == -1:
         prev_gpio_state = gpio_state
@@ -130,13 +156,13 @@ def checkGPIOKey(onPush, onRelease, onLongPress):
     return 0
 
 def gpioKeyPush(pushCount):
-    print('gpioKeyPush pushCount', pushCount)
+    logger.debug('gpioKeyPush pushCount %d', pushCount)
     ledUser.write(255)
     uiManager.current().onKeyPush(pushCount)
     pass
 
 def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
-    print('gpioKeyRelease isLongPress', isLongPress, 'pushCount', pushCount, 'longPressSeconds', longPressSeconds)
+    logger.debug('gpioKeyRelease isLongPress %d pushCount %d longPressSeconds %d', isLongPress, pushCount, longPressSeconds)
     if uiManager.current().onKeyRelease(isLongPress, pushCount, longPressSeconds):
         return
     # if not isLongPress and pushCount == 1:
@@ -154,7 +180,7 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
 
 def gpioKeyLongPress(escapedSeconds):
     # ledUser.write(0)
-    print('long press', escapedSeconds)
+    logger.debug('long press %d', escapedSeconds)
     if escapedSeconds == 2:
         # sysInfoShowType.set_current(0)
         # timeShowType.set_current(0)
@@ -168,7 +194,7 @@ def gpioKeyLongPress(escapedSeconds):
         os.system("ttyecho -n /dev/tty1 clear")
         os.system("ttyecho -n /dev/tty1 systemctl poweroff -i")
         os.kill()
-        # print("Power Off")
+        logger.info("Power Off")
         pass
         
     pass
@@ -252,11 +278,15 @@ def _signal_handler(signal, frame):
     global uiManager, ledUser, gpio_key
     service.stop_server()
     # time.sleep(1)
-    # print('threading.active_count() =', threading.active_count())
+    # logger.debug('threading.active_count() = %d', threading.active_count())
     # dumpThreads('_signal_handler')
     uiManager.quit()
-    ledUser.close()
-    gpio_key.close()
+    if ledUser is not None:
+        ledUser.close()
+        ledUser = None
+    if gpio_key is not None:
+        gpio_key.close()
+        gpio_key = None
     
 
 def main():
@@ -307,7 +337,7 @@ def main():
         drawLongPressState()
 
         pygame.display.update()
-        game_clock.tick(60)
+        game_clock.tick(30)
 
     pygame.quit()
 

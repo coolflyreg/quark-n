@@ -63,19 +63,23 @@ class CameraUI(MenuUI):
             self.drivers = pygame.camera.list_cameras()
         if self.cam is None and len(self.drivers) > 0:
             self.cam = pygame.camera.Camera(self.drivers[0], windowSize)
+            logger.debug('camera class %s', self.cam.__class__.__name__)
             try:
                 self.cam.start()
+                logger.info('cam start success')
             except:
-                print('cam start failed')
+                logger.error('cam start failed')
                 pass
             pass
 
     def on_hidden(self):
-        # try:
-        #     self.cam.stop()
-        # except:
-        #     print('cam stop failed')
-        #     pass
+        try:
+            self.cam.stop()
+            self.cam = None
+            logger.info('cam stop success')
+        except:
+            logger.error('cam stop failed')
+            pass
         # try:
         #     pygame.camera.quit()
         # except:
@@ -127,7 +131,7 @@ class CameraUI(MenuUI):
             self.current_img = new_img
             self.img_state = IMG_NEW
         except Error as e:
-            print('take picture error', e)
+            logger.error('take picture error', e)
 
     def update(self, surface = None):
 
