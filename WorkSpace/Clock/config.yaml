@@ -37,7 +37,7 @@ folder:
 
 monitor:
   socket-mode: 666
-  socket-path: /tmp/monitor.sock
+  socket-path: /tmp/ui_clock.sock
   pid-file: /run/ui_clock.pid
 
 # 机器人设置

@@ -21,7 +21,7 @@ class LaunchersUI(BaseUI):
         self.images = Config().get('user-interface.launcher.images')
         if len(self.images) > 0 and self.target_index < len(self.images):
             self.launcher_img = GIFImage(os.path.join(sys.path[0], self.images[self.target_index]))
-        print('images', self.images)
+        logger.debug('images %s', json.dumps(self.images))
         self.showTick = pygame.time.get_ticks()
         pass
 

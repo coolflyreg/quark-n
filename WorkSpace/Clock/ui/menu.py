@@ -70,7 +70,7 @@ class MenuUI(BaseUI):
 
     def on_shown(self):
         self.showTick = pygame.time.get_ticks()
-        print(self.__class__.__name__, 'icon size on shown', len(self.ICONS))
+        self.logger.debug('icon size on shown %d', len(self.ICONS))
         # if len(self.ICON_IMGS) == 0:
         self.ICON_IMGS = []
         for iconAct in self.ICONS:
