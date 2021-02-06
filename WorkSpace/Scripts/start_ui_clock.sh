@@ -1,7 +1,11 @@
 #!/bin/bash
 
+
 cd /home/pi
 
-python ./WorkSpace/Clock/main.py
+./WorkSpace/Clock/nohup_start.sh
+
+
+
 
 

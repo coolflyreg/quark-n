@@ -62,15 +62,20 @@ class UIManager(metaclass=Singleton):
         from .wukongMenu import WuKongMenuUI
         from .camera import CameraUI
         from .album import AlbumUI
+        from .mpu6050 import MPU6050UI
 
+        def add_ui(c):
+            self.__ui_dict[c.__name__]          = c(len(self.__ui_dict))
         self.robotUI = RobotUI(0)
-        self.__ui_dict[WelcomeUI.__name__]          = WelcomeUI(len(self.__ui_dict))
-        self.__ui_dict[ClockUI.__name__]            = ClockUI(len(self.__ui_dict))
-        self.__ui_dict[MenuUI.__name__]             = MenuUI(len(self.__ui_dict))
-        self.__ui_dict[LaunchersUI.__name__]        = LaunchersUI(len(self.__ui_dict))
-        self.__ui_dict[WuKongMenuUI.__name__]       = WuKongMenuUI(len(self.__ui_dict))
-        self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
-        self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
+        add_ui(WelcomeUI)
+        add_ui(ClockUI)
+        add_ui(ClockUI)
+        add_ui(MenuUI)
+        add_ui(LaunchersUI)
+        add_ui(WuKongMenuUI)
+        add_ui(CameraUI)
+        add_ui(AlbumUI)
+        add_ui(MPU6050UI)
 
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()

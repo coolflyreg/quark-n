@@ -255,6 +255,7 @@ def drawLongPressState():
 
 
 def _signal_handler(signal, frame):
+    print('_signal_handler', signal, frame)
     global uiManager, ledUser, gpio_key
     service.stop_server()
     # time.sleep(1)
