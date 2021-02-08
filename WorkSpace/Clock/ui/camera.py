@@ -115,17 +115,6 @@ class CameraUI(MenuUI):
                 return True
         return False
 
-    # def onMouseUp(self, event):
-    #     if len(self.drivers) == 0:
-    #         from .menu import MenuUI
-    #         UIManager().get(MenuUI.__name__).show()
-    #         return True
-    #     if self.ask_save_pic is False:
-    #         self.ask_save_pic = True
-    #     if self.ask_save_pic:
-    #         super().onMouseUp(event)
-    #     pass
-
     def executeAction(self):
         if self.ask_save_pic is False:
             self.ask_save_pic = True
