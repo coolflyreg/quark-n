@@ -80,11 +80,12 @@ class CameraUI(MenuUI):
         except:
             logger.error('cam stop failed')
             pass
-        # try:
-        #     pygame.camera.quit()
-        # except:
-        #     print('pycamera quit failed')
-        #     pass
+        try:
+            pygame.camera.quit()
+            self.is_cam_module_inited = False
+        except:
+            print('pycamera quit failed')
+            pass
         self.current_img = None
         self.img_state = IMG_OLD
         super().on_hidden()
@@ -114,7 +115,21 @@ class CameraUI(MenuUI):
                 return True
         return False
 
+    # def onMouseUp(self, event):
+    #     if len(self.drivers) == 0:
+    #         from .menu import MenuUI
+    #         UIManager().get(MenuUI.__name__).show()
+    #         return True
+    #     if self.ask_save_pic is False:
+    #         self.ask_save_pic = True
+    #     if self.ask_save_pic:
+    #         super().onMouseUp(event)
+    #     pass
+
     def executeAction(self):
+        if self.ask_save_pic is False:
+            self.ask_save_pic = True
+            return
         if self.ICONS[self.current_index].name == 'save':
             filename = str(int(time.time())) + '_' + os.urandom(3).hex() + '.png'
             pygame.image.save(self.current_img, os.path.join(Config().get('camera.dest_path', '/home/pi/Pictures/'), filename))
