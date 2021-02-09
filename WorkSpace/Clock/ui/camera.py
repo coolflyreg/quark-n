@@ -119,6 +119,8 @@ class CameraUI(MenuUI):
         if self.ask_save_pic is False:
             self.ask_save_pic = True
             return
+        if self.cam is None:
+            return
         if self.ICONS[self.current_index].name == 'save':
             filename = str(int(time.time())) + '_' + os.urandom(3).hex() + '.png'
             pygame.image.save(self.current_img, os.path.join(Config().get('camera.dest_path', '/home/pi/Pictures/'), filename))

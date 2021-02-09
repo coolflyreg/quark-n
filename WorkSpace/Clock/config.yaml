@@ -53,6 +53,7 @@ robot:
 
 # 界面设置
 user-interface:
+  mpu-motion: false
   # 启动图设置
   launcher:
     # 当前第几个启动图

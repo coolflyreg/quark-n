@@ -31,7 +31,7 @@ class MenuUI(BaseUI):
         IconAction('wukong', 'wukong.png', '孙悟空'),
         IconAction('camera', 'camera.png', '相机'),
         IconAction('album', 'img.png', '相册'),
-        # IconAction('statistics', 'statisticalchart.png'),
+        IconAction('statistics', 'statisticalchart.png', '陀螺仪'),
         # IconAction('calendar', 'calendar.png'),
         # IconAction('maillist', 'maillist.png'),
         IconAction('splash', 'computer.png', '启动画面'),
@@ -84,20 +84,33 @@ class MenuUI(BaseUI):
     def on_hidden(self):
         pass
 
+    def moveToLeft(self):
+        self.direction = -1
+        self.animating = True
+        self.animationRemain = self.animationDuration
+        self.animationPrevTick = pygame.time.get_ticks()
+
+        if (self.target_index - 1) < 0:
+            self.target_index = len(self.ICON_IMGS) - 1
+        else:
+            self.target_index = self.target_index - 1
+    
+    def moveToRight(self):
+        self.direction = 1
+        self.animating = True
+        self.animationRemain = self.animationDuration
+        self.animationPrevTick = pygame.time.get_ticks()
+
+        if (self.target_index + 1) >= len(self.ICON_IMGS):
+            self.target_index = 0
+        else:
+            self.target_index = self.target_index + 1
+
     def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
         if not isLongPress and pushCount == 1:
             if self.animating:
                 return True
-            if (self.target_index + 1) >= len(self.ICON_IMGS):
-                self.target_index = 0
-            else:
-                self.target_index = self.target_index + 1
-            
-            # print('onKeyRelease current_index', self.current_index, ', animating', self.animating)
-            self.direction = 1
-            self.animating = True
-            self.animationRemain = self.animationDuration
-            self.animationPrevTick = pygame.time.get_ticks()
+            self.moveToRight()
             return True
         if isLongPress:
             if longPressSeconds == 2:
@@ -124,27 +137,11 @@ class MenuUI(BaseUI):
 
         if leftRect.collidepoint(event.pos):
             # print("click left icon")
-            self.direction = -1
-            self.animating = True
-            self.animationRemain = self.animationDuration
-            self.animationPrevTick = pygame.time.get_ticks()
-
-            if (self.target_index - 1) < 0:
-                self.target_index = len(self.ICON_IMGS) - 1
-            else:
-                self.target_index = self.target_index - 1
+            self.moveToLeft()
             return
         if rightRect.collidepoint(event.pos):
             # print("click right icon")
-            self.direction = 1
-            self.animating = True
-            self.animationRemain = self.animationDuration
-            self.animationPrevTick = pygame.time.get_ticks()
-
-            if (self.target_index + 1) >= len(self.ICON_IMGS):
-                self.target_index = 0
-            else:
-                self.target_index = self.target_index + 1
+            self.moveToRight()
             return
         if centerRect.collidepoint(event.pos) or SIDE_MENU_RECT.collidepoint(event.pos):
             # print("click center icon")
@@ -169,6 +166,10 @@ class MenuUI(BaseUI):
             from .album import AlbumUI
             UIManager().get(AlbumUI.__name__).show()
 
+        # if self.ICONS[self.current_index].name == 'statistics':
+        #     from .mpu6050 import MPU6050UI
+        #     UIManager().get(MPU6050UI.__name__).show()
+
         if self.ICONS[self.current_index].name == 'splash':
             from ui.launchers import LaunchersUI
             UIManager().get(LaunchersUI.__name__).show()
@@ -176,6 +177,21 @@ class MenuUI(BaseUI):
         if self.ICONS[self.current_index].name == 'close':
             os.system("ttyecho -n /dev/tty1 echo 'User exited LCD UI'")
             UIManager().quit(send_signal=True)
+
+    def onMpu(self, activities):
+        if self.animating:
+            return True
+        if activities['isPosActivityOnZ'] > 1:
+            self.executeAction()
+            return True
+        if activities['isNegActivityOnX'] > activities['isPosActivityOnX']:
+            self.moveToLeft()
+            return True
+        elif activities['isNegActivityOnX'] < activities['isPosActivityOnX']:
+            self.moveToRight()
+            return True
+        
+        return False
 
     def update(self, surface = None):
         if surface is None:

@@ -79,7 +79,7 @@ class UIManager(metaclass=Singleton):
 
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
-        # self.__ui_dict[WuKongMenuUI.__name__].show()
+        # self.__ui_dict[MPU6050UI.__name__].show()
         pass
 
     def update(self, surface = None):
@@ -229,6 +229,9 @@ class BaseUI:
 
     def onKeyLongPress(self, escapedSeconds):
         pass
+
+    def onMpu(self, activities):
+        return False
 
     def _show(self):
         # print('BaseUI _show')

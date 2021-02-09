@@ -18,6 +18,7 @@ from utils import *
 
 from server import service
 from ui.core import UIManager
+from drivers.mpu6050 import mpu6050
 
 logger = logging.getLogger('App')
 
@@ -27,9 +28,15 @@ logger.warn('warn log')
 logger.error('error log')
 logger.critical('critical log')
 
+##############
+### periphery init
+##############
 gpio_key = GPIO("/dev/gpiochip1", 3, "in")
 ledUser = LED("usr_led", True)
 
+##############
+### pid file init
+##############
 def writePid():
     pid = str(os.getpid())
     f = open(Config().get('monitor.pid-file', '/run/ui_clock.pid'), 'w')
@@ -38,6 +45,9 @@ def writePid():
 
 writePid()
 
+##############
+### pygame init
+##############
 if not os.getenv('SDL_FBDEV'):
     os.putenv('SDL_FBDEV', Config().get('display.device'))#利用quark自带tft屏幕显示
 
@@ -58,20 +68,13 @@ game_surface = pygame.display.set_mode(window_size, pygame.FULLSCREEN)
 pygame.mouse.set_visible( False )
 mouseLastMotion = 0
 
+##############
+### UIManager init
+##############
 uiManager = UIManager()
 uiManager.setWindowSize(window_size)
 uiManager.setSurface(game_surface)
 uiManager.init()
-
-prevSecondIntValue = 0
-prev_gpio_state = -1
-current_gpio_state = 0
-gpio_push_state = False
-gpio_push_start = 0
-gpio_push_count = 0
-
-LongPressSeconds = (2,5,10)
-LongPressSecondsState = [False, False, False]
 
 def gotoMenu():
     from ui.menu import MenuUI
@@ -90,10 +93,105 @@ def flashLed():
     time.sleep(0.1)
     ledUser.write(255)
 
+##############
+### MPU 6050
+##############
+mpu = mpu6050()
+mpu.init(mpu.MPU6050_ADDRESS, scale=mpu.MPU6050_SCALE_2000DPS, a_range=mpu.MPU6050_RANGE_16G)
+# mpu.set_gyro_range(0x18)
+mpu.setAccelPowerOnDelay(mpu.MPU6050_DELAY_3MS)
+mpu.setIntFreeFallEnabled(False);  
+mpu.setIntZeroMotionEnabled(True)
+mpu.setIntMotionEnabled(True)
+mpu.setDHPFMode(mpu.MPU6050_DHPF_5HZ)
+mpu.setMotionDetectionThreshold(3)
+mpu.setMotionDetectionDuration(5)
+mpu.setZeroMotionDetectionThreshold(4)
+mpu.calibration()
+mpu.calibrateGyro(100)
+lastCheckMpuTicks = 0
+lastRecordMpuTicks = 0
+
+mpu6050_motion = {
+    'isNegActivityOnX': 0,
+    'isPosActivityOnX': 0,
+    'isNegActivityOnY': 0,
+    'isPosActivityOnY': 0,
+    'isNegActivityOnZ': 0,
+    'isPosActivityOnZ': 0
+}
+
+def resetMpuMotion():
+    global mpu6050_motion, lastRecordMpuTicks
+    lastRecordMpuTicks = pygame.time.get_ticks()
+    mpu6050_motion['isNegActivityOnX'] = 0
+    mpu6050_motion['isPosActivityOnX'] = 0
+    mpu6050_motion['isNegActivityOnY'] = 0
+    mpu6050_motion['isPosActivityOnY'] = 0
+    mpu6050_motion['isNegActivityOnZ'] = 0
+    mpu6050_motion['isPosActivityOnZ'] = 0
+
+def recordMpuMotion(activities):
+    global mpu6050_motion, lastRecordMpuTicks
+    mpu6050_motion['isNegActivityOnX'] += activities['isNegActivityOnX']
+    mpu6050_motion['isPosActivityOnX'] += activities['isPosActivityOnX']
+    mpu6050_motion['isNegActivityOnY'] += activities['isNegActivityOnY']
+    mpu6050_motion['isPosActivityOnY'] += activities['isPosActivityOnY']
+    mpu6050_motion['isNegActivityOnZ'] += activities['isNegActivityOnZ']
+    mpu6050_motion['isPosActivityOnZ'] += activities['isPosActivityOnZ']
+
+    if activities['isNegActivityOnX'] or activities['isPosActivityOnX'] or activities['isNegActivityOnY'] or activities['isPosActivityOnY'] or activities['isNegActivityOnZ'] or activities['isPosActivityOnZ']:
+        lastRecordMpuTicks = pygame.time.get_ticks()
+        return True
+    return False
+
+def checkMPU():
+    global mpu, lastCheckMpuTicks, lastRecordMpuTicks, mpu6050_motion
+
+    if bool(Config().get('user-interface.mpu-motion')) is False:
+        return
+
+    mpu.get_all_data()
+    activities = mpu.read_activites()
+    recorded = recordMpuMotion(activities)
+    handled = False
+    current_ticks = pygame.time.get_ticks()
+    if mpu6050_motion['isNegActivityOnZ'] > 3 or mpu6050_motion['isPosActivityOnZ'] > 3:
+        handled = True
+        gotoMenu()
+    elif (current_ticks - lastCheckMpuTicks) > 500:
+        logger.debug('ui activities {}'.format(mpu6050_motion))
+        handled = uiManager.current().onMpu(activities = mpu6050_motion)
+
+    if handled is True:
+        resetMpuMotion()
+        lastCheckMpuTicks = current_ticks
+    elif (current_ticks - lastRecordMpuTicks) > 300:
+        lastCheckMpuTicks = pygame.time.get_ticks()
+        resetMpuMotion()
+
+    if recorded:
+        logger.debug('motion {}'.format(mpu6050_motion))
+
+    pass
+
+##############
+### GPIO Key behaviour
+##############
+prevSecondIntValue = 0
+prev_gpio_state = -1
+current_gpio_state = 0
+gpio_push_state = False
+gpio_push_start = 0
+gpio_push_count = 0
+
+LongPressSeconds = (2,5,10)
+LongPressSecondsState = [False, False, False]
+
 def checkGPIOKey(onPush, onRelease, onLongPress):
     global prev_gpio_state, gpio_push_state, gpio_push_start, gpio_push_count, LongPressSeconds, LongPressSecondsState
     if gpio_key is None:
-        return
+        return 0
     gpio_state = gpio_key.read()
     if prev_gpio_state == -1:
         prev_gpio_state = gpio_state
@@ -146,10 +244,6 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
     if uiManager.current().onKeyRelease(isLongPress, pushCount, longPressSeconds):
         return
     # if not isLongPress and pushCount == 1:
-        # sysInfoShowType.next()
-        # timeShowType.next()
-        # dateShowType.next()
-        # netShowType.next()
         # pass
     if isLongPress: 
         if longPressSeconds > 2 and longPressSeconds < 5:
@@ -162,10 +256,6 @@ def gpioKeyLongPress(escapedSeconds):
     # ledUser.write(0)
     logger.debug('long press %d', escapedSeconds)
     if escapedSeconds == 2:
-        # sysInfoShowType.set_current(0)
-        # timeShowType.set_current(0)
-        # dateShowType.set_current(0)
-        # netShowType.set_current(0)
         pass
     elif escapedSeconds == 5:
         pass
@@ -253,7 +343,9 @@ def drawLongPressState():
         drawLongPressStateView(escaped_push_time, current_PowerOff_x, (255, 0, 0) if escaped_push_time < 2000 else (0, 255, 0))
     pass
 
-
+##############
+### signal handler
+##############
 def _signal_handler(signal, frame):
     print('_signal_handler', signal, frame)
     global uiManager, ledUser, gpio_key
@@ -272,7 +364,9 @@ def _signal_handler(signal, frame):
     if (os.path.exists(pidFile) and os.path.isfile(pidFile)):
         os.remove(pidFile)
     
-
+##############
+### main loop
+##############
 def main():
     from ui.menu import MenuUI
     global uiManager
@@ -312,6 +406,8 @@ def main():
         pygame.mouse.set_visible( mouseIsVisible() )
 
         checkGPIOKey(gpioKeyPush, gpioKeyRelease, gpioKeyLongPress)
+
+        checkMPU()
 
         if not uiManager.isRunning():
             break
