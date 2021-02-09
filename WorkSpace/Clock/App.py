@@ -387,6 +387,7 @@ def main():
                 pass
             elif event.type == pygame.MOUSEMOTION:
                 mouseLastMotion = pygame.time.get_ticks()
+                uiManager.current().onMouseMove(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouseLastMotion = pygame.time.get_ticks()
                 uiManager.current().onMouseDown(event)

@@ -18,99 +18,68 @@ class Cube(Object3D):
             )
     rotationAngle = 1
 
-    def draw(self, surface):
-        # self.ctx.clearRect(0, 0, self.canvasWidth, self.canvasHeight)
-        # surface.fill(color_black)
+    mouseOffsetX = 0
+    mouseOffsetY = 0
+    offsetX = 0
+    offsetY = 0
+    offsetZ = 0
 
+    def draw(self, surface):
         # // 绘制矩形ABCD
-        # self.ctx.beginPath()
         lines = []
 
         point = self.transformCoordinatePoint(self.pointMap.A)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.B)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.C)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.D)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.closePath()
-        # self.ctx.stroke()
         pygame.draw.lines(surface, color_white, True, lines)
 
         # // 绘制矩形EFGH
-        # self.ctx.beginPath()
         lines = []
         point = self.transformCoordinatePoint(self.pointMap.E)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.F)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.G)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.H)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.closePath()
-        # self.ctx.stroke()
         pygame.draw.lines(surface, color_white, True, lines)
 
         # // 绘制直线AE
-        # self.ctx.beginPath()
         lines = []
         point = self.transformCoordinatePoint(self.pointMap.A)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.E)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.stroke()
-        # self.ctx.closePath()
         pygame.draw.lines(surface, color_white, True, lines)
 
         # // 绘制直线BF
-        # self.ctx.beginPath()
         lines = []
         point = self.transformCoordinatePoint(self.pointMap.B)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.F)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.stroke()
-        # self.ctx.closePath()
         pygame.draw.lines(surface, color_white, True, lines)
 
         # // 绘制直线CD
-        # self.ctx.beginPath()
         lines = []
         point = self.transformCoordinatePoint(self.pointMap.C)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.G)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.stroke()
-        # self.ctx.closePath()
         pygame.draw.lines(surface, color_white, True, lines)
 
         # // 绘制直线DH
-        # self.ctx.beginPath()
         lines = []
         point = self.transformCoordinatePoint(self.pointMap.D)
-        # self.ctx.moveTo(point.x, point.y)
         lines.append((point.x, point.y))
         point = self.transformCoordinatePoint(self.pointMap.H)
-        # self.ctx.lineTo(point.x, point.y)
         lines.append((point.x, point.y))
-        # self.ctx.stroke()
-        # self.ctx.closePath()
         pygame.draw.lines(surface, color_white, True, lines)
 
     def animationFrame(self):
@@ -122,20 +91,57 @@ class Cube(Object3D):
             point.x = x * math.cos(self.rotationAngle / 180 * math.pi) - z * math.sin(self.rotationAngle / 180 * math.pi)
             point.y = y
             point.z = z * math.cos(self.rotationAngle / 180 * math.pi) + x * math.sin(self.rotationAngle / 180 * math.pi)
-        # for point in self.pointMap:
-        #     x = point.x
-        #     y = point.y
-        #     z = point.z
-        #     # 绕X旋转
-        #     point.x = x
-        #     point.y = y * math.cos(self.rotationAngle / 180 * math.pi) - z * math.sin(self.rotationAngle / 180 * math.pi)
-        #     point.z = z * math.cos(self.rotationAngle / 180 * math.pi) + y * math.sin(self.rotationAngle / 180 * math.pi)
-        # for point in self.pointMap:
-        #     x = point.x
-        #     y = point.y
-        #     z = point.z
-        #     # 绕Z旋转
-        #     point.x = x * math.cos(self.rotationAngle / 180 * math.pi) - y * math.sin(self.rotationAngle / 180 * math.pi)
-        #     point.y = y * math.cos(self.rotationAngle / 180 * math.pi) + x * math.sin(self.rotationAngle / 180 * math.pi)
-        #     point.z = z
-        
+        for point in self.pointMap:
+            x = point.x
+            y = point.y
+            z = point.z
+            # 绕X旋转
+            point.x = x
+            point.y = y * math.cos(self.rotationAngle / 180 * math.pi) - z * math.sin(self.rotationAngle / 180 * math.pi)
+            point.z = z * math.cos(self.rotationAngle / 180 * math.pi) + y * math.sin(self.rotationAngle / 180 * math.pi)
+        for point in self.pointMap:
+            x = point.x
+            y = point.y
+            z = point.z
+            # 绕Z旋转
+            point.x = x * math.cos(self.rotationAngle / 180 * math.pi) - y * math.sin(self.rotationAngle / 180 * math.pi)
+            point.y = y * math.cos(self.rotationAngle / 180 * math.pi) + x * math.sin(self.rotationAngle / 180 * math.pi)
+            point.z = z
+
+    def mouseDown(self, event):
+        # print('mouseDown', event)
+        if event.button == 1:
+            self.enable = True
+            self.mouseOffsetY = event.pos[0]
+            self.mouseOffsetX = event.pos[1]
+
+    def mouseMove(self, event):
+        # print('mouseMove', event)
+        if event.buttons[0] and self.enable is True:
+            self.offsetY = self.offsetY + (event.pos[0] - self.mouseOffsetY)
+            self.offsetX = self.offsetX + (event.pos[1] - self.mouseOffsetX)
+            self.mouseOffsetX = event.pos[1] % 360
+            self.mouseOffsetY = event.pos[0] % 360
+
+    def mouseUp(self, event):
+        # print('mouseUp', event)
+        if event.button == 1:
+            self.enable = False
+        # if event.button == 4: # wheel up
+        #     self.globeRadius += 10
+        #     if self.globeRadius > 1000:
+        #         self.globeRadius = 1000
+        #     self.createPoint()
+            # self.visual.z += 100
+            # if self.visual.z > 10000:
+            #     self.visual.z = 10000
+            # pass
+        # if event.button == 5: # wheel down
+        #     self.globeRadius -= 10
+        #     if self.globeRadius < 20:
+        #         self.globeRadius = 20
+        #     self.createPoint()
+            # self.visual.z -= 100
+            # if self.visual.z < 1000:
+            #     self.visual.z = 1000
+            # pass

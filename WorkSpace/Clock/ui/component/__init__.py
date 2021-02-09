@@ -57,10 +57,7 @@ class Point3DMap(object):
     def __iter__(self):   #__iter__用于返回自身，返回自身才能被调用。
         if self.__list is None:
             self.__list = [self.A, self.B, self.C, self.D, self.E, self.F, self.G, self.H]
-            # self.__it = iter([id(self.A), id(self.B), id(self.C), id(self.D), id(self.E), id(self.F), id(self.G), id(self.H)])
-        # return iter([self.A, self.B, self.C, self.D, self.E, self.F, self.G, self.H])
         return self.__list.__iter__()
-        # return self.__it
 
 
 class Line(object):
@@ -131,3 +128,15 @@ class Object3D(object):
             x = (p.x - self.visual.x) * self.visual.z / (self.visual.z - p.z) + offsetX,
             y = (p.y - self.visual.y) * self.visual.z / (self.visual.z - p.z) + offsetY
         )
+
+    def mouseDown(self, event):
+        pass
+
+    def mouseMove(self, event):
+        pass
+
+    def mouseUp(self, event):
+        pass
+
+    def mouseWheel(self, event):
+        pass

@@ -13,6 +13,7 @@ import math
 import ctypes
 from .component.cube import Cube
 from .component.wave import Wave
+from .component.globe import Globe
 from utils.stepper import Stepper
 
 logger = logging.getLogger('ui.welcome')
@@ -23,11 +24,11 @@ class ThreeDUI(BaseUI):
     showTick = 0
 
     anim_tick = 0
-    showType = Stepper(minVal=0, maxVal=1, step=1, currentVal=0)
+    showType = Stepper(minVal=0, maxVal=2, step=1, currentVal=0)
     
-    object3Ds = [Cube(), Wave()]
-    # object3D = Cube()
-    # object3D = Wave()
+    object3Ds = [Cube(), Wave(), Globe()]
+    isLeftMouseDown = False
+    isMouseMoved = False
 
     def __init__(self, ui_index):
         super().__init__(ui_index)
@@ -42,7 +43,32 @@ class ThreeDUI(BaseUI):
             pass
 
     def onMouseDown(self, event):
-        self.showType.next()
+        # print('onMouseDown', event)
+        if event.button == 1:
+            self.isLeftMouseDown = True
+        self.object3Ds[self.showType.current()].mouseDown(event)
+        pass
+
+    def onMouseMove(self, event):
+        # print('onMouseMove', event)
+        if event.buttons[0]:
+            self.isMouseMoved = True
+        self.object3Ds[self.showType.current()].mouseMove(event)
+        pass
+    
+    def onMouseUp(self, event):
+        # print('onMouseUp', event)
+        if event.button == 1:
+            self.isLeftMouseDown = False
+            if self.isMouseMoved is False:
+                self.showType.next()
+            self.isMouseMoved = False
+
+        self.object3Ds[self.showType.current()].mouseUp(event)
+        pass
+
+    def onMouseWheel(self, event):
+        self.object3Ds[self.showType.current()].mouseWheel(event)
 
     def on_shown(self):
         self.showTick = pygame.time.get_ticks()

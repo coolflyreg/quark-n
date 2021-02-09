@@ -223,6 +223,9 @@ class BaseUI:
     def onMouseMove(self, event):
         pass
 
+    def onMouseWheel(self, event):
+        pass
+
     def onKeyPush(self, pushCount):
         pass
 
