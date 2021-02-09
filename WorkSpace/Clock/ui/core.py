@@ -63,6 +63,7 @@ class UIManager(metaclass=Singleton):
         from .camera import CameraUI
         from .album import AlbumUI
         from .mpu6050 import MPU6050UI
+        from .threeD import ThreeDUI
 
         def add_ui(c):
             self.__ui_dict[c.__name__]          = c(len(self.__ui_dict))
@@ -76,10 +77,11 @@ class UIManager(metaclass=Singleton):
         add_ui(CameraUI)
         add_ui(AlbumUI)
         add_ui(MPU6050UI)
+        add_ui(ThreeDUI)
 
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
-        # self.__ui_dict[MPU6050UI.__name__].show()
+        # self.__ui_dict[ThreeDUI.__name__].show()
         pass
 
     def update(self, surface = None):

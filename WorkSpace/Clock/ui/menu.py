@@ -31,8 +31,8 @@ class MenuUI(BaseUI):
         IconAction('wukong', 'wukong.png', '孙悟空'),
         IconAction('camera', 'camera.png', '相机'),
         IconAction('album', 'img.png', '相册'),
-        IconAction('statistics', 'statisticalchart.png', '陀螺仪'),
-        # IconAction('calendar', 'calendar.png'),
+        # IconAction('statistics', 'statisticalchart.png', '陀螺仪'),
+        # IconAction('calendar', 'calendar.png', '3D界面'),
         # IconAction('maillist', 'maillist.png'),
         IconAction('splash', 'computer.png', '启动画面'),
         IconAction('set', 'set.png', '设置'),
@@ -169,6 +169,10 @@ class MenuUI(BaseUI):
         # if self.ICONS[self.current_index].name == 'statistics':
         #     from .mpu6050 import MPU6050UI
         #     UIManager().get(MPU6050UI.__name__).show()
+
+        if self.ICONS[self.current_index].name == 'calendar':
+            from .threeD import ThreeDUI
+            UIManager().get(ThreeDUI.__name__).show()
 
         if self.ICONS[self.current_index].name == 'splash':
             from ui.launchers import LaunchersUI

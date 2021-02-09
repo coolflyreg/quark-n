@@ -96,19 +96,20 @@ def flashLed():
 ##############
 ### MPU 6050
 ##############
-mpu = mpu6050()
-mpu.init(mpu.MPU6050_ADDRESS, scale=mpu.MPU6050_SCALE_2000DPS, a_range=mpu.MPU6050_RANGE_16G)
-# mpu.set_gyro_range(0x18)
-mpu.setAccelPowerOnDelay(mpu.MPU6050_DELAY_3MS)
-mpu.setIntFreeFallEnabled(False);  
-mpu.setIntZeroMotionEnabled(True)
-mpu.setIntMotionEnabled(True)
-mpu.setDHPFMode(mpu.MPU6050_DHPF_5HZ)
-mpu.setMotionDetectionThreshold(3)
-mpu.setMotionDetectionDuration(5)
-mpu.setZeroMotionDetectionThreshold(4)
-mpu.calibration()
-mpu.calibrateGyro(100)
+if bool(Config().get('user-interface.mpu-motion')) is True:
+    mpu = mpu6050()
+    mpu.init(mpu.MPU6050_ADDRESS, scale=mpu.MPU6050_SCALE_2000DPS, a_range=mpu.MPU6050_RANGE_16G)
+    # mpu.set_gyro_range(0x18)
+    mpu.setAccelPowerOnDelay(mpu.MPU6050_DELAY_3MS)
+    mpu.setIntFreeFallEnabled(False);  
+    mpu.setIntZeroMotionEnabled(True)
+    mpu.setIntMotionEnabled(True)
+    mpu.setDHPFMode(mpu.MPU6050_DHPF_5HZ)
+    mpu.setMotionDetectionThreshold(3)
+    mpu.setMotionDetectionDuration(5)
+    mpu.setZeroMotionDetectionThreshold(4)
+    mpu.calibration()
+    mpu.calibrateGyro(100)
 lastCheckMpuTicks = 0
 lastRecordMpuTicks = 0
 
