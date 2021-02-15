@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -21,7 +22,7 @@ class WelcomeUI(BaseUI):
         images = Config().get('user-interface.launcher.images')
         if len(images) > 0 and target_index < len(images):
             self.launcher_img = GIFImage(os.path.join(sys.path[0], images[target_index]))
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         pass
 
     def on_hidden(self):
@@ -38,7 +39,7 @@ class WelcomeUI(BaseUI):
             welcome2Txt = bigFont.render('QUARK-N', True, color_white)
             surface.blit(welcomeTxt, (window_width / 2 - welcomeTxt.get_width() / 2, 10))
             surface.blit(welcome2Txt, (window_width / 2 - welcome2Txt.get_width() / 2, 60))
-            if (pygame.time.get_ticks() - self.showTick) > 1000:
+            if ((time.time() * 1000) - self.showTick) > 1000:
                 from .clock import ClockUI
                 ui = UIManager().get(ClockUI.__name__)
                 ui.show()
@@ -48,7 +49,7 @@ class WelcomeUI(BaseUI):
         else:
             self.launcher_img.render(surface, (0, -10))
             # print("render welcome img")
-            if (pygame.time.get_ticks() - self.showTick) > 1600:
+            if ((time.time() * 1000) - self.showTick) > 1600:
                 from .clock import ClockUI
                 ui = UIManager().get(ClockUI.__name__)
                 ui.show()

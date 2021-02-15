@@ -54,7 +54,7 @@ class CameraUI(MenuUI):
 
     def on_shown(self):
         super().on_shown()
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         windowSize = UIManager().getWindowSize()
         # if self.cam is None:
         if self.is_cam_module_inited is False:
@@ -63,24 +63,29 @@ class CameraUI(MenuUI):
             self.drivers = pygame.camera.list_cameras()
         if self.cam is None and len(self.drivers) > 0:
             self.cam = pygame.camera.Camera(self.drivers[0], windowSize)
+            logger.debug('camera class %s', self.cam.__class__.__name__)
             try:
                 self.cam.start()
+                logger.info('cam start success')
             except:
-                print('cam start failed')
+                logger.error('cam start failed')
                 pass
             pass
 
     def on_hidden(self):
-        # try:
-        #     self.cam.stop()
-        # except:
-        #     print('cam stop failed')
-        #     pass
-        # try:
-        #     pygame.camera.quit()
-        # except:
-        #     print('pycamera quit failed')
-        #     pass
+        try:
+            self.cam.stop()
+            self.cam = None
+            logger.info('cam stop success')
+        except:
+            logger.error('cam stop failed')
+            pass
+        try:
+            pygame.camera.quit()
+            self.is_cam_module_inited = False
+        except:
+            print('pycamera quit failed')
+            pass
         self.current_img = None
         self.img_state = IMG_OLD
         super().on_hidden()
@@ -111,6 +116,11 @@ class CameraUI(MenuUI):
         return False
 
     def executeAction(self):
+        if self.ask_save_pic is False:
+            self.ask_save_pic = True
+            return
+        if self.cam is None:
+            return
         if self.ICONS[self.current_index].name == 'save':
             filename = str(int(time.time())) + '_' + os.urandom(3).hex() + '.png'
             pygame.image.save(self.current_img, os.path.join(Config().get('camera.dest_path', '/home/pi/Pictures/'), filename))
@@ -127,7 +137,7 @@ class CameraUI(MenuUI):
             self.current_img = new_img
             self.img_state = IMG_NEW
         except Error as e:
-            print('take picture error', e)
+            logger.error('take picture error', e)
 
     def update(self, surface = None):
 

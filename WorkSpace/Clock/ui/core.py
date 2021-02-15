@@ -62,26 +62,36 @@ class UIManager(metaclass=Singleton):
         from .wukongMenu import WuKongMenuUI
         from .camera import CameraUI
         from .album import AlbumUI
+        from .mpu6050 import MPU6050UI
+        from .threeD import ThreeDUI
 
+        def add_ui(c):
+            self.__ui_dict[c.__name__]          = c(len(self.__ui_dict))
         self.robotUI = RobotUI(0)
-        self.__ui_dict[WelcomeUI.__name__]          = WelcomeUI(len(self.__ui_dict))
-        self.__ui_dict[ClockUI.__name__]            = ClockUI(len(self.__ui_dict))
-        self.__ui_dict[MenuUI.__name__]             = MenuUI(len(self.__ui_dict))
-        self.__ui_dict[LaunchersUI.__name__]        = LaunchersUI(len(self.__ui_dict))
-        self.__ui_dict[WuKongMenuUI.__name__]       = WuKongMenuUI(len(self.__ui_dict))
-        self.__ui_dict[CameraUI.__name__]           = CameraUI(len(self.__ui_dict))
-        self.__ui_dict[AlbumUI.__name__]            = AlbumUI(len(self.__ui_dict))
+        add_ui(WelcomeUI)
+        add_ui(ClockUI)
+        add_ui(ClockUI)
+        add_ui(MenuUI)
+        add_ui(LaunchersUI)
+        add_ui(WuKongMenuUI)
+        add_ui(CameraUI)
+        add_ui(AlbumUI)
+        add_ui(MPU6050UI)
+        add_ui(ThreeDUI)
 
         self.__ui_dict[WelcomeUI.__name__].show()
         # self.__ui_dict[MenuUI.__name__].show()
-        # self.__ui_dict[WuKongMenuUI.__name__].show()
+        # self.__ui_dict[ThreeDUI.__name__].show()
         pass
 
     def update(self, surface = None):
         if not self.running:
+            print('UIManager is not running')
             return
         if self._current() is not None:
             self._current().update()
+        else: 
+            logger.warn('Can\'t get current ui')
 
         self.robotUI.update()
 
@@ -114,10 +124,13 @@ class UIManager(metaclass=Singleton):
         return self.__ui_stack.pop()
 
     def replace(self, ui, root=False):
+        current = self._current()
         if root is True:
             while len(self.__ui_stack) > 1:
                 self.pop()
         self.pop()
+        if current is not None:
+            current.on_hidden()
         ui.show()
         # self.push(ui)
         pass
@@ -172,6 +185,7 @@ class BaseUI:
     """
 
     ui_index = 0
+    __cache = None
 
     controls = None
 
@@ -179,6 +193,7 @@ class BaseUI:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ui_index = ui_index
         self.event_dispatcher = EventDispatcher()
+        self.__cache = {}
         self.on_create()
 
     def on_create(self):
@@ -208,6 +223,9 @@ class BaseUI:
     def onMouseMove(self, event):
         pass
 
+    def onMouseWheel(self, event):
+        pass
+
     def onKeyPush(self, pushCount):
         pass
 
@@ -216,6 +234,9 @@ class BaseUI:
 
     def onKeyLongPress(self, escapedSeconds):
         pass
+
+    def onMpu(self, activities):
+        return False
 
     def _show(self):
         # print('BaseUI _show')
@@ -245,10 +266,21 @@ class BaseUI:
                 c.paint()
         pass
 
+    def get_cache(self, key, callback):
+        if callback is None:
+            return None
+        val = self.__cache.get(key)
+        if val is not None:
+            return val
+        val = callback()
+        self.__cache[key] = val
+        return val
+
     def on_hidden(self):
         pass
 
     def on_destroy(self):
+        self.__cache = {}
         pass
 
     pass

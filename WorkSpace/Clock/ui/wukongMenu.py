@@ -35,6 +35,8 @@ class WuKongMenuUI(MenuUI):
         self.wukongIndicator = pygame.transform.scale(
             pygame.image.load(
                 os.path.join(sys.path[0], 'images/icon_set3', 'wukong.png')), (15, 15))
+
+        self.killallWukong()
     
     def on_create(self):
         super().on_create()

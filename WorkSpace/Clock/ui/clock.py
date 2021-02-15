@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 from datetime import datetime
+import time
 import logging
 import logging.config
 import pygame
@@ -61,7 +62,7 @@ class ClockUI(BaseUI):
                 self.NET_STATS[1:] = [stat]
 
     def on_shown(self):
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         self.cputemp = cputempf()
         self.rx()
         self.tx()
@@ -121,13 +122,13 @@ class ClockUI(BaseUI):
             self.RX_RATE = round((RX - RX_O)/1024/1024,3)
             self.TX_RATE = round((TX - TX_O)/1024/1024,3)
 
-            cpuInfo = readCpuInfo()
-            self.cpuUse = str(round(calcCpuUsage(self.lastCpuInfo, cpuInfo), 1)) # getCPUuse()
-            self.lastCpuInfo = cpuInfo
-
             self.memInfo = get_mem_info()
             self.dskInfo = get_disk_info()
             self.hostIp = get_host_ip()
+
+            cpuInfo = readCpuInfo()
+            self.cpuUse = str(round(calcCpuUsage(self.lastCpuInfo, cpuInfo), 1)) # getCPUuse()
+            self.lastCpuInfo = cpuInfo
 
         cpuUse = self.cpuUse
         memInfo = self.memInfo
@@ -150,27 +151,30 @@ class ClockUI(BaseUI):
         if len(shour) == 1:
             shour = '0' + shour
         timeStr = shour + ':' + minute
-        timeText = largeFont.render(timeStr, True, color_green)
-        secondText = middleFont.render(second, True, color_green)
-        monthText = smallFont.render(year + '-' + month + '-' + date, True, color_green)
-        yearText = smallFont.render(year, True, color_green)
-        amText = middleFont.render(am, True, color_green)
-        dayText = smallFont.render( day, True, color_green)
+        # timeText = largeFont.render(timeStr, True, color_green)
+        timeText = self.get_cache('timeText_{}'.format(timeStr), lambda: largeFont.render(timeStr, True, color_green))
+        secondText = self.get_cache('secondText_{}'.format(second), lambda: middleFont.render(second, True, color_green))
+        monthText = self.get_cache('monthText_{}'.format(year + '-' + month + '-' + date), lambda: smallFont.render(year + '-' + month + '-' + date, True, color_green))
+        yearText = self.get_cache('yearText_{}'.format(year), lambda: smallFont.render(year, True, color_green))
+        amText = self.get_cache('amText_{}'.format(am), lambda: middleFont.render(am, True, color_green))
+        dayText = self.get_cache('dayText_{}'.format(day), lambda: smallFont.render(day, True, color_green))
 
         if self.sysInfoShowType.current() == 0:
-            sysText = smallFont.render(self.cputemp, True, color_white)
-            sysUseText = smallFont.render(str(cpuUse) + '%', True, color_white)
+            sysText = self.get_cache('sysText_{}'.format(self.cputemp), lambda: smallFont.render(self.cputemp, True, color_white))
+            sysUseText = self.get_cache('sysUseText_{}'.format(self.cputemp), lambda: smallFont.render(str(cpuUse) + '%', True, color_white))
         if self.sysInfoShowType.current() == 1:
-            sysText = smallFont.render(memStr, True, color_white)
-            sysUseText = smallFont.render(memUse + '%', True, color_white)
+            sysText = self.get_cache('sysText_{}'.format(memStr), lambda: smallFont.render(memStr, True, color_white))
+            sysUseText = self.get_cache('sysUseText_{}'.format(memUse), lambda: smallFont.render(memUse + '%', True, color_white))
         if self.sysInfoShowType.current() == 2:
-            sysText = smallFont.render(dskStr, True, color_white)
-            sysUseText = smallFont.render(dskUse, True, color_white)
-        netSpeedInText = tinyFont.render('' + str(self.RX_RATE) + ' M/s', True, color_green if self.RX_RATE > 0 else color_white)
-        netSpeedOutText = tinyFont.render('' + str(self.TX_RATE) + ' M/s', True, color_green if self.TX_RATE > 0 else color_white)
+            sysText = self.get_cache('sysText_{}'.format(dskStr), lambda: smallFont.render(dskStr, True, color_white))
+            sysUseText = self.get_cache('sysUseText_{}'.format(dskUse), lambda: smallFont.render(dskUse, True, color_white))
+        rxStr = '' + str(self.RX_RATE) + ' M/s'
+        txStr = '' + str(self.TX_RATE) + ' M/s'
+        netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
+        netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
 
         ip = self.hostIp
-        ipText = miniFont.render(ip, True, color_white)
+        ipText = self.get_cache('ip_{}'.format(ip), lambda: miniFont.render(ip, True, color_white))
         
         surface.blit(sysText, (10,0))
         surface.blit(sysUseText, (window_width - sysUseText.get_width() - 2,0))

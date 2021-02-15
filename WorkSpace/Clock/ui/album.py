@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -28,7 +29,7 @@ class AlbumUI(BaseUI):
             self.loadFile(filepath)
 
         self.target_index = target_index
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         pass
 
     def loadFile(self, path):

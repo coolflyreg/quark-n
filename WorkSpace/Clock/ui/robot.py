@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -33,21 +34,21 @@ class RobotMessage(object):
         window_height = windowSize[1]
 
         calcHeight = (txtSize[0] / window_width * txtSize[1]) + txtSize[1]
-        print('txtSize', txtSize)
-        print('calc height', calcHeight)
+        # logger.debug('txtSize %d', txtSize)
+        # logger.debug('calc height %d', calcHeight)
         loop = 0
         usedFontSize = 30
         while txtSize[0] > window_width and (calcHeight + 15) > (window_height):
             # usedFontSize = usedFontSize * ((window_height - 15) / calcHeight)
             usedFontSize = usedFontSize - 2
-            print('usedFontSize', usedFontSize, int(usedFontSize))
+            # logger.debug('usedFontSize %d, %d', usedFontSize, int(usedFontSize))
             usedFont = pygame.font.Font(zhFontPath, int(usedFontSize))
             usedFont.set_bold(True)
             txtSize = usedFont.size(text)
             calcHeight = round(txtSize[0] / window_width * txtSize[1]) + txtSize[1]
 
-            print('  txtSize', txtSize)
-            print('  calc height', calcHeight)
+            # logger.debug('  txtSize %d', txtSize)
+            # logger.debug('  calc height %d', calcHeight)
             loop = loop + 1
             if (loop > 20 or usedFontSize <= 12):
                 break
@@ -65,7 +66,7 @@ class RobotMessage(object):
                     self.renderedText.append(usedFont.render(self.text[start : end], True, self.color))
                     start = end
                     self.totalHeight = self.totalHeight + txtSize[1]
-                    print('self.renderedText[len(self.renderedText) - 1].get_height()', self.renderedText[len(self.renderedText) - 1].get_height(), txtSize[1])
+                    # logger.debug('self.renderedText[len(self.renderedText) - 1].get_height()', self.renderedText[len(self.renderedText) - 1].get_height(), txtSize[1])
                 else:
                     end = end + 1
 
@@ -74,7 +75,7 @@ class RobotMessage(object):
                 self.renderedText.append(usedFont.render(self.text[start : end], True, self.color))
                 self.totalHeight = self.totalHeight + self.renderedText[len(self.renderedText) - 1].get_height()
 
-        print('self.renderedText length', len(self.renderedText))
+        # logger.debug('self.renderedText length %d', len(self.renderedText))
 
     def show(self, surface):
         windowSize = UIManager().getWindowSize()
@@ -102,10 +103,10 @@ class RobotMessage(object):
             # self.offset_line = self.offset_line + 1
             if (self.totalHeight - self.offset_line * self.renderedText[0].get_height()) > (window_height - 15):
                 self.offset_line = self.offset_line + 1
-                print('    self.offset_line', self.offset_line)
+                # logger.debug('    self.offset_line %d', self.offset_line)
             else:
                 self.offset_line = 0
-                print('    self.offset_line', self.offset_line)
+                # logger.debug('    self.offset_line %d', self.offset_line)
 
     pass
 
@@ -129,17 +130,17 @@ class RobotUI(BaseUI):
         pass
 
     def is_showing(self):
-        return pygame.time.get_ticks() - self.wakeUpTime < self.showDuration
+        return (time.time() * 1000 - self.wakeUpTime) < self.showDuration
 
     def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
         if not isLongPress and pushCount == 1:
-            self.wakeUpTime = pygame.time.get_ticks()
+            self.wakeUpTime = time.time() * 1000
             if self.message is not None:
                 self.message.triggerOffset()
             return True
         # if isLongPress:
         #     if longPressSeconds == 2:
-        #         # print('current_index', self.current_index, ', animating', self.animating)
+        #         # logger.debug('current_index', self.current_index, ', animating', self.animating)
         #         if self.animating:
         #             return True
         #         self.executeAction()
@@ -152,10 +153,11 @@ class RobotUI(BaseUI):
         window_width = windowSize[0]
         window_height = windowSize[1]
 
-        if pygame.time.get_ticks() - self.wakeUpTime > self.showDuration:
+        if self.is_showing() is False:
             if self.message is not None:
                 self.message = None
             return
+        self.logger.debug('update wakeUpTime={}, current={}'.format(self.wakeUpTime, time.time() * 1000))
         surface2 = surface.convert_alpha()
         surface2.fill((255,255,255,0))
         
@@ -182,28 +184,28 @@ class RobotUI(BaseUI):
         pass
 
     def showMessage(self, message):
-        self.wakeUpTime = pygame.time.get_ticks()
-        print('robot showMessage: {}'.format(message))
+        self.wakeUpTime = time.time() * 1000
+        logger.debug('robot showMessage: {}'.format(message))
         self.message = RobotMessage(message, color_white)
         pass
 
     def event(self, eventName, args):
-        self.wakeUpTime = pygame.time.get_ticks()
-        print('robot event', eventName, args)
+        self.wakeUpTime = time.time() * 1000
+        logger.debug('robot event', eventName, args)
         if 'think' == eventName:
             self.message = RobotMessage('(Thinking...) {}'.format(args), color_white)
         pass
     
     def wakeUp(self):
-        self.wakeUpTime = pygame.time.get_ticks()
-        print('robot wakeUp')
+        self.wakeUpTime = time.time() * 1000
+        logger.debug('robot wakeUp')
         if self.message is not None:
             self.message = None
         pass
 
     def sleep(self):
         self.wakeUpTime = 0
-        print('robot sleep')
+        logger.debug('robot sleep')
         if self.message is not None:
             self.message = None
         pass
@@ -226,7 +228,7 @@ class RobotUI(BaseUI):
 
         surfaceSize = (int(surfaceSize[0] * scale), int(surfaceSize[1] * scale))
         if scale != 1:
-            #print('face scale', scale)
+            #logger.debug('face scale', scale)
             faceSurface = pygame.transform.scale(faceSurface, surfaceSize)
             x = winSize[0] / 2 - surfaceSize[0] / 2
 
