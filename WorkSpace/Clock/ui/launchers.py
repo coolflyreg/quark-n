@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -23,7 +24,7 @@ class LaunchersUI(BaseUI):
         if len(self.images) > 0 and self.target_index < len(self.images):
             self.launcher_img = GIFImage(os.path.join(sys.path[0], self.images[self.target_index]))
         logger.debug('images %s', json.dumps(self.images))
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         pass
 
     def on_hidden(self):

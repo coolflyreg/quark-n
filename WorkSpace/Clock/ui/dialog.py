@@ -1,3 +1,4 @@
+import time
 from ui.core import *
 from ui.menu import *
 import pygame
@@ -62,19 +63,19 @@ class DialogBaseUI(BaseUI):
         self.updateContent(surface2)
 
         if self._animationTicks == -1:
-            self._animationTicks = pygame.time.get_ticks()
+            self._animationTicks = (time.time() * 1000)
             return
         
         current_text = None
         if self.title is not None and self.title != '':
             current_text = zhMiniFont.render(self.title, True, color_white)
 
-        if self._animating is True and (pygame.time.get_ticks() - self._animationTicks) < self._animationDuration: 
+        if self._animating is True and ((time.time() * 1000) - self._animationTicks) < self._animationDuration: 
             # print('confirm menu animating')
-            scale = (pygame.time.get_ticks() - self._animationTicks) / self._animationDuration
+            scale = ((time.time() * 1000) - self._animationTicks) / self._animationDuration
             if self._direction == -1:
                 scale = 1 - scale
-            # self._animationTicks = self._animationTicks - pygame.time.get_ticks()
+            # self._animationTicks = self._animationTicks - (time.time() * 1000)
             if current_text is not None:
                 surface2.blit(current_text, (window_width / 2 - current_text.get_width() / 2, 0))
             surface2 = pygame.transform.scale(surface2, (int(surface2.get_width() * scale), int(surface2.get_height() * scale)))

@@ -54,7 +54,7 @@ class CameraUI(MenuUI):
 
     def on_shown(self):
         super().on_shown()
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         windowSize = UIManager().getWindowSize()
         # if self.cam is None:
         if self.is_cam_module_inited is False:

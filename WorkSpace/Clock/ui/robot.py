@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -129,11 +130,11 @@ class RobotUI(BaseUI):
         pass
 
     def is_showing(self):
-        return (pygame.time.get_ticks() - self.wakeUpTime) < self.showDuration
+        return (time.time() * 1000 - self.wakeUpTime) < self.showDuration
 
     def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
         if not isLongPress and pushCount == 1:
-            self.wakeUpTime = pygame.time.get_ticks()
+            self.wakeUpTime = time.time() * 1000
             if self.message is not None:
                 self.message.triggerOffset()
             return True
@@ -152,10 +153,11 @@ class RobotUI(BaseUI):
         window_width = windowSize[0]
         window_height = windowSize[1]
 
-        if (pygame.time.get_ticks() - self.wakeUpTime) > self.showDuration:
+        if self.is_showing() is False:
             if self.message is not None:
                 self.message = None
             return
+        self.logger.debug('update wakeUpTime={}, current={}'.format(self.wakeUpTime, time.time() * 1000))
         surface2 = surface.convert_alpha()
         surface2.fill((255,255,255,0))
         
@@ -182,20 +184,20 @@ class RobotUI(BaseUI):
         pass
 
     def showMessage(self, message):
-        self.wakeUpTime = pygame.time.get_ticks()
+        self.wakeUpTime = time.time() * 1000
         logger.debug('robot showMessage: {}'.format(message))
         self.message = RobotMessage(message, color_white)
         pass
 
     def event(self, eventName, args):
-        self.wakeUpTime = pygame.time.get_ticks()
+        self.wakeUpTime = time.time() * 1000
         logger.debug('robot event', eventName, args)
         if 'think' == eventName:
             self.message = RobotMessage('(Thinking...) {}'.format(args), color_white)
         pass
     
     def wakeUp(self):
-        self.wakeUpTime = pygame.time.get_ticks()
+        self.wakeUpTime = time.time() * 1000
         logger.debug('robot wakeUp')
         if self.message is not None:
             self.message = None

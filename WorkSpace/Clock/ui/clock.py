@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 from datetime import datetime
+import time
 import logging
 import logging.config
 import pygame
@@ -61,7 +62,7 @@ class ClockUI(BaseUI):
                 self.NET_STATS[1:] = [stat]
 
     def on_shown(self):
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         self.cputemp = cputempf()
         self.rx()
         self.tx()

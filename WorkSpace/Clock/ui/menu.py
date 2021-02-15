@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 import pygame
@@ -69,7 +70,7 @@ class MenuUI(BaseUI):
         self.ICON_IMGS = icon_imgs
 
     def on_shown(self):
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         self.logger.debug('icon size on shown %d', len(self.ICONS))
         # if len(self.ICON_IMGS) == 0:
         self.ICON_IMGS = []
@@ -88,7 +89,7 @@ class MenuUI(BaseUI):
         self.direction = -1
         self.animating = True
         self.animationRemain = self.animationDuration
-        self.animationPrevTick = pygame.time.get_ticks()
+        self.animationPrevTick = (time.time() * 1000)
 
         if (self.target_index - 1) < 0:
             self.target_index = len(self.ICON_IMGS) - 1
@@ -99,7 +100,7 @@ class MenuUI(BaseUI):
         self.direction = 1
         self.animating = True
         self.animationRemain = self.animationDuration
-        self.animationPrevTick = pygame.time.get_ticks()
+        self.animationPrevTick = (time.time() * 1000)
 
         if (self.target_index + 1) >= len(self.ICON_IMGS):
             self.target_index = 0
@@ -206,8 +207,8 @@ class MenuUI(BaseUI):
         if self.__class__.__name__ == MenuUI.__name__ or self.drawBackground is True:
             surface.fill(color_black)
 
-        escapedTime = pygame.time.get_ticks() - self.animationPrevTick
-        self.animationPrevTick = pygame.time.get_ticks()
+        escapedTime = (time.time() * 1000) - self.animationPrevTick
+        self.animationPrevTick = (time.time() * 1000)
         percent = 1.0 - self.animationRemain / self.animationDuration
         self.animationRemain = self.animationRemain - escapedTime
         total_run_x = (self.normalIconSize[0] / 2 + self.smallIconSize[0] / 2 - 5)
@@ -277,7 +278,7 @@ class MenuUI(BaseUI):
         if self.animationRemain <= 0:
             self.animating = False
             self.current_index = self.target_index
-        if (pygame.time.get_ticks() - self.showTick) > 1000:
+        if ((time.time() * 1000) - self.showTick) > 1000:
             # from .clock import ClockUI
             # ui = UIManager().get(ClockUI.__name__)
             # ui.show()

@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import os
 import sys
+import time
 import logging
 import logging.config
 from ui.core import UIManager, BaseUI
@@ -71,7 +72,7 @@ class ThreeDUI(BaseUI):
         self.object3Ds[self.showType.current()].mouseWheel(event)
 
     def on_shown(self):
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         pass
 
     def on_hidden(self):
@@ -85,8 +86,8 @@ class ThreeDUI(BaseUI):
         surface.fill(color_black)
 
         # self.logger.debug('update {} {}'.format(self.rotationAngle, self.pointMap.A.value()))
-        # if (pygame.time.get_ticks() - self.anim_tick) > 100:
-        anim_tick = pygame.time.get_ticks()
+        # if ((time.time() * 1000) - self.anim_tick) > 100:
+        anim_tick = (time.time() * 1000)
         self.object3Ds[self.showType.current()].draw(surface)
         self.object3Ds[self.showType.current()].animationFrame()
         

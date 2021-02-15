@@ -124,7 +124,7 @@ mpu6050_motion = {
 
 def resetMpuMotion():
     global mpu6050_motion, lastRecordMpuTicks
-    lastRecordMpuTicks = pygame.time.get_ticks()
+    lastRecordMpuTicks = (time.time() * 1000)
     mpu6050_motion['isNegActivityOnX'] = 0
     mpu6050_motion['isPosActivityOnX'] = 0
     mpu6050_motion['isNegActivityOnY'] = 0
@@ -142,7 +142,7 @@ def recordMpuMotion(activities):
     mpu6050_motion['isPosActivityOnZ'] += activities['isPosActivityOnZ']
 
     if activities['isNegActivityOnX'] or activities['isPosActivityOnX'] or activities['isNegActivityOnY'] or activities['isPosActivityOnY'] or activities['isNegActivityOnZ'] or activities['isPosActivityOnZ']:
-        lastRecordMpuTicks = pygame.time.get_ticks()
+        lastRecordMpuTicks = (time.time() * 1000)
         return True
     return False
 
@@ -156,7 +156,7 @@ def checkMPU():
     activities = mpu.read_activites()
     recorded = recordMpuMotion(activities)
     handled = False
-    current_ticks = pygame.time.get_ticks()
+    current_ticks = (time.time() * 1000)
     if mpu6050_motion['isNegActivityOnZ'] > 3 or mpu6050_motion['isPosActivityOnZ'] > 3:
         handled = True
         gotoMenu()
@@ -168,7 +168,7 @@ def checkMPU():
         resetMpuMotion()
         lastCheckMpuTicks = current_ticks
     elif (current_ticks - lastRecordMpuTicks) > 300:
-        lastCheckMpuTicks = pygame.time.get_ticks()
+        lastCheckMpuTicks = (time.time() * 1000)
         resetMpuMotion()
 
     if recorded:
@@ -198,13 +198,13 @@ def checkGPIOKey(onPush, onRelease, onLongPress):
         prev_gpio_state = gpio_state
         return 0
     
-    escaped_push_time = pygame.time.get_ticks() - gpio_push_start
+    escaped_push_time = (time.time() * 1000) - gpio_push_start
     long_press_second = int(escaped_push_time / 1000)
     
     if gpio_state != prev_gpio_state:
         if prev_gpio_state == 1: # push
             gpio_push_state = True
-            gpio_push_start = pygame.time.get_ticks()
+            gpio_push_start = (time.time() * 1000)
             if escaped_push_time < 400:
                 gpio_push_count = gpio_push_count + 1
             if onPush is not None:
@@ -272,7 +272,7 @@ def gpioKeyLongPress(escapedSeconds):
 
 def mouseIsVisible():
     global mouseLastMotion
-    return (pygame.time.get_ticks() - mouseLastMotion) < 3000
+    return ((time.time() * 1000) - mouseLastMotion) < 3000
 
 def drawLongPressStateView(escaped_push_time, current_x, bg_color):
     powerTxt = bigFont.render('POWER', True, color_black)
@@ -320,7 +320,7 @@ def drawLongPressStateView(escaped_push_time, current_x, bg_color):
 current_PowerOff_x = 0
 def drawLongPressState():
     global current_PowerOff_x
-    escaped_push_time = pygame.time.get_ticks() - gpio_push_start
+    escaped_push_time = (time.time() * 1000) - gpio_push_start
     if gpio_push_state and escaped_push_time > 400:
         current_x = w * (escaped_push_time / 10000)
         current_PowerOff_x = current_x
@@ -386,14 +386,14 @@ def main():
                 return
                 pass
             elif event.type == pygame.MOUSEMOTION:
-                mouseLastMotion = pygame.time.get_ticks()
+                mouseLastMotion = (time.time() * 1000)
                 uiManager.current().onMouseMove(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouseLastMotion = pygame.time.get_ticks()
+                mouseLastMotion = (time.time() * 1000)
                 uiManager.current().onMouseDown(event)
                 pass
             elif event.type == pygame.MOUSEBUTTONUP:
-                mouseLastMotion = pygame.time.get_ticks()
+                mouseLastMotion = (time.time() * 1000)
                 if mouseIsVisible():
                     pos = pygame.mouse.get_pos()
                     if SIDE_MENU_RECT.collidepoint(pos):

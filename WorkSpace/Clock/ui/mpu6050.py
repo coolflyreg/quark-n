@@ -66,7 +66,7 @@ class MPU6050UI(BaseUI):
         images = Config().get('user-interface.launcher.images')
         if len(images) > 0 and target_index < len(images):
             self.launcher_img = GIFImage(os.path.join(sys.path[0], images[target_index]))
-        self.showTick = pygame.time.get_ticks()
+        self.showTick = (time.time() * 1000)
         self.arrow = pygame.Surface((30, 30)).convert_alpha()
         self.arrow.fill((255,255,255,0))
         # pygame.draw.polygon(self.arrow, color_green, ((15, 0), (0, 15), (29, 15)))
@@ -167,21 +167,21 @@ class MPU6050UI(BaseUI):
         self.mpu6050_motion['isPosActivityOnY'] = activities['isPosActivityOnY']
         self.mpu6050_motion['isNegActivityOnZ'] = activities['isNegActivityOnZ']
         self.mpu6050_motion['isPosActivityOnZ'] = activities['isPosActivityOnZ']
-        if (pygame.time.get_ticks() - self.motion_tick) > 500:
+        if ((time.time() * 1000) - self.motion_tick) > 500:
 
             self.motion_dir = 0
             if activities['isNegActivityOnX']:
                 self.motion_dir = -1
-                self.motion_tick = pygame.time.get_ticks()
+                self.motion_tick = (time.time() * 1000)
             elif activities['isPosActivityOnX']:
                 self.motion_dir = 1
-                self.motion_tick = pygame.time.get_ticks()
+                self.motion_tick = (time.time() * 1000)
             elif activities['isNegActivityOnY']:
                 self.motion_dir = 4
-                self.motion_tick = pygame.time.get_ticks()
+                self.motion_tick = (time.time() * 1000)
             elif activities['isPosActivityOnY']:
                 self.motion_dir = 2
-                self.motion_tick = pygame.time.get_ticks()
+                self.motion_tick = (time.time() * 1000)
         
         if self.motion_dir == 0:
             pygame.draw.circle(surface, color_green, center2_pos, 15)
