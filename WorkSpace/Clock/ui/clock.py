@@ -44,10 +44,13 @@ class ClockUI(BaseUI):
 
     lastCpuInfo = readCpuInfo()
     cpuUse = 0
+    cpuUseRemain = 0
     memInfo = get_mem_info()
     dskInfo = get_disk_info()
     hostIp = get_host_ip()
 
+    animation_values = {}
+    
     cputemp = None
 
     hide_second_symbol = False
@@ -56,6 +59,18 @@ class ClockUI(BaseUI):
     'June', 'July', 'August', 'September', 'October', 'November', 'December']
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
     # days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日' ]
+
+    def getAnimationValue(self, key, currentValue, stepValue):
+        if self.animation_values.__contains__(key):
+            if (currentValue > (self.animation_values[key] + stepValue)):
+                self.animation_values[key] = self.animation_values[key] + stepValue
+            elif (currentValue < (self.animation_values[key] - stepValue)):
+                self.animation_values[key] = self.animation_values[key] - stepValue
+            else:
+                self.animation_values[key] = currentValue
+        else:
+            self.animation_values[key] = currentValue
+        return self.animation_values[key]
 
     def rx(self):
         ifstat = open('/proc/net/dev').readlines()
@@ -304,17 +319,17 @@ class ClockUI(BaseUI):
         sysTitle = ''
         if self.sysInfoShowType.current() == 0: # cpu
             sysTitle = 'CPU'
-            self.drawMeterIndicator(surface, self.cpuUse)
+            self.drawMeterIndicator(surface, self.getAnimationValue('cpuUse', self.cpuUse, 5))
             self.drawMeterIndicator(surface, clampPercent(self.cputempValue, 20, 100), right = True)
         if self.sysInfoShowType.current() == 1: # memory
             sysTitle = 'MEMORY'
             # print(memInfo)
-            self.drawMeterIndicator(surface, memUse)
+            self.drawMeterIndicator(surface, self.getAnimationValue('memUse', memUse, 5))
             self.drawMeterIndicator(surface, memInfo['swap']['used'] / memInfo['swap']['total'] * 100, right = True)
         if self.sysInfoShowType.current() == 2: #disk
             sysTitle = 'DISK'
             # print(dskUse, dskInfo['free'], dskInfo['total'], dskInfo['free_percent'], dskInfo['used_percent'])
-            self.drawMeterIndicator(surface, dskUse)
+            self.drawMeterIndicator(surface, self.getAnimationValue('dskUse', dskUse, 5))
             self.drawMeterIndicator(surface, dskInfo['free_percent'], right = True)
 
         sysText = self.get_cache('sysText_{}'.format(sysTitle), lambda: smallFont.render(sysTitle, True, color_white))
