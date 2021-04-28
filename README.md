@@ -5,6 +5,8 @@ wiki: https://wiki.seeedstudio.com/cn/Quantum-Mini-Linux-Development-Kit/
 
 大神项目地址：https://github.com/peng-zhihui/Project-Quantum
 
+对应的外壳：https://gitee.com/coolflyreg163/quark-n-3d
+
 1. 启动网络
 http://wiki.friendlyarm.com/wiki/index.php/Use_NetworkManager_to_configure_network_settings
 
