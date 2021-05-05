@@ -252,3 +252,7 @@ hw.snd.maxautovchans=4
    ```bash
    sudo apt-get install fswebcam
    ```
+
+#### 其他驱动
+- RTL8821CU（8811cu）： https://gitee.com/coolflyreg163/rtl8821cu  内有ko文件，quark-n可直接可使用
+- RTL8723DU：https://gitee.com/coolflyreg163/rtl8723du    内有ko文件，quark-n直接可使用
