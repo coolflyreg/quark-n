@@ -144,12 +144,13 @@ hw.snd.maxautovchans=4
 7. 运行如下命令进行安装
    ```bash
    cd /home/pi/WorkSpace/Clock/
-   sudo python -m pip install -r requirements.txt
+   sudo python -m pip install --index http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com -r requirements.txt
    mkdir /home/pi/WorkSpace/Clock/logs
    sudo ln -s /home/pi/WorkSpace/Scripts/services/ui_clock.service /lib/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable ui_clock
    ```
+   ** ruamel.yaml 需要使用阿里云的镜像来安装，豆瓣的镜像里没有！ **
    **到达这一步，已经在重启后会自动启动。下面是手动命令**
 8. 命令提示：
    1. 启动 （手动启动后按Ctrl + C可脱离）
