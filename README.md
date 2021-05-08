@@ -54,6 +54,47 @@ hw.snd.pcm0.vchans=4
 hw.snd.maxautovchans=4
 ```
 
+9. 播放视频
+```bash
+sudo mplayer -vo fbdev2:/dev/fb1 -x 240 -y 135 -zoom /home/pi/Videos/BadApple.mp4
+```
+**视频最好转换到和屏幕一个分辨率，不然就会卡顿掉帧**
+
+10. 视频分辨率转换
+```
+ffmpeg -i /home/pi/Videos/BadApple.mp4 -strict -2 -s 240x134 /home/pi/Videos/BadApple_240x134.mp4
+```
+分辨率必须是2的倍数所以，所以不能是240x135，而是240x134
+
+11. 录音测试
+查看录音设备：
+```bash
+sudo arecord –l
+```
+录音和播放
+```bash
+sudo arecord -Dhw:2,0 -d 10 -f cd -r 44100 -c 2 -t wav test.wav
+sudo arecord -Dhw:2,0 -f cd -r 16000 -c 1 -t wav record.wav
+sudo aplay -Dhw:2,0 /home/pi/Music/test.wav
+```
+参数解析
+- -D 指定了录音设备，0,1 是card 0 device 1的意思，也就是TDM_Capture
+- -d 指定录音的时长，单位时秒
+- -f 指定录音格式，通过上面的信息知道只支持 cd cdr dat 
+- -r 指定了采样率，单位时Hz
+- -c 指定channel 个数
+- -t 指定生成的文件格式
+
+12. apt-get强制使用Ipv4
+```bash
+sudo apt-get -o Acquire::ForceIPv4=true update
+```
+永久解决办法：
+```note
+创建文件 /etc/apt/apt.conf.d/99force-ipv4
+加入代码: Acquire::ForceIPv4 "true";
+```
+
 ### TF卡有系统时启动到emmc分区
 1. 将 npi-config 覆盖拷贝到 /usr/bin/npi-config
 2. 运行sudo npi-config
