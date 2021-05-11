@@ -95,6 +95,17 @@ sudo apt-get -o Acquire::ForceIPv4=true update
 加入代码: Acquire::ForceIPv4 "true";
 ```
 
+13. 蓝牙连接音箱或耳机
+系统默认缺少软件包，安装下列软件包，重启之后删除之前的配对，然后重新配对
+```bash
+sudo apt-get install pulseaudio-module-bluetooth bluez-tools
+```
+以下命令用于启动时自动运行
+```
+pactl load-module module-bluetooth-discover
+```
+
+
 ### TF卡有系统时启动到emmc分区
 1. 将 npi-config 覆盖拷贝到 /usr/bin/npi-config
 2. 运行sudo npi-config
