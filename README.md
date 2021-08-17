@@ -347,5 +347,7 @@ pactl load-module module-bluetooth-discover
 2. 安装python3的包
    **注意：安装pygame的时候，时间比较长，耐心等待**
   ```bash
-  sudo python3 -m pip install fire ruamel.yaml pygame==1.9.6 python-periphery PyYAML Markdown tornado smbus Pillow numpy
+  sudo python3 -m pip install fire ruamel.yaml pygame==1.9.6 python-periphery PyYAML Markdown tornado smbus
+  sudo python3 -m pip install Pillow
+  sudo python3 -m pip install numpy
   ```
