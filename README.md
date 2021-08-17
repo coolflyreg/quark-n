@@ -355,4 +355,21 @@ pactl load-module module-bluetooth-discover
   ```bash
   sudo apt-get install python3-numpy
   ```
+
+### 从ubuntu 18.04 升级到ubuntu 20.04 LTS
+  升级的基本的步骤，和从16.04到18.04的步骤1、2、3里的命令是一毛一样的
+
+  注意，需要先从16.04升级到18.04
+
+### ubuntu的软件源
+  ubuntu 18.04的版本代号是**bionic**，ubuntu 20.04的版本的代号是**focal**
+
+  升级的时候，do-release-upgrade脚本中的部分会自动更换软件源。
+
+  也可以手动更换国内的源，链接如下：
+  ```note
+  https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu-ports/
+  ```
+
+
   
