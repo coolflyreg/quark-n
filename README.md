@@ -310,7 +310,7 @@ pactl load-module module-bluetooth-discover
 - RTL8821CU（8811cu）： https://gitee.com/coolflyreg163/rtl8821cu  内有ko文件，quark-n可直接可使用
 - RTL8723DU：https://gitee.com/coolflyreg163/rtl8723du    内有ko文件，quark-n直接可使用
 
-#### 从ubuntu 16.04 升级到ubuntu 18.04 LTS
+### 从ubuntu 16.04 升级到ubuntu 18.04 LTS
 1. 首先更新系统到最新版本，运行如下命令：
   ```bash
   sudo apt-get update
@@ -327,7 +327,7 @@ pactl load-module module-bluetooth-discover
   sudo do-release-upgrade
   ```
 
-##### 升级过程中遇到的问题
+#### 升级过程中遇到的问题
 1. 提示 “Your python3 install is corrupted. Please fix the ‘/usr/bin/python3’ symlink.”，执行如下命令：
   ```bash
   sudo ln -sf /usr/bin/python2.7 /usr/bin/python
@@ -338,7 +338,7 @@ pactl load-module module-bluetooth-discover
   cat /var/log/dist-upgrade/main.log
   ```
 
-##### 升级到ubuntu 18.04 LTS后，按照如下步骤，安装ui_clock的依赖包
+#### 升级到ubuntu 18.04 LTS后，按照如下步骤，安装ui_clock的依赖包
 **注意：升级后，python3的版本变为3.6.9，之前系统的3.5.2的包已经无法使用**
 1. 首先安装python3的pip模块
   ```bash
