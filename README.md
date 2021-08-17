@@ -309,3 +309,43 @@ pactl load-module module-bluetooth-discover
 #### 其他驱动
 - RTL8821CU（8811cu）： https://gitee.com/coolflyreg163/rtl8821cu  内有ko文件，quark-n可直接可使用
 - RTL8723DU：https://gitee.com/coolflyreg163/rtl8723du    内有ko文件，quark-n直接可使用
+
+#### 从ubuntu 16.04 升级到ubuntu 18.04 LTS
+1. 首先更新系统到最新版本，运行如下命令：
+  ```bash
+  sudo apt-get update
+  sudo apt-get upgrade
+  sudo apt-get autoremove
+  sudo apt dist-upgrade
+  ```
+2. 安装update-manager-core，执行如下命令：
+  ```bash
+  sudo apt-get install update-manager-core
+  ```
+3. 执行系统升级，执行如下命令：
+  ```bash
+  sudo do-release-upgrade
+  ```
+
+##### 升级过程中遇到的问题
+1. 提示 “Your python3 install is corrupted. Please fix the ‘/usr/bin/python3’ symlink.”，执行如下命令：
+  ```bash
+  sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+  sudo ln -sf /usr/bin/python3.5 /usr/bin/python3
+  ```
+2. 如果还有问题仍然阻止升级，那么我们需要查看升级日志，来确定具体为什么原因无法升级
+  ```bash
+  cat /var/log/dist-upgrade/main.log
+  ```
+
+##### 升级到ubuntu 18.04 LTS后，按照如下步骤，安装ui_clock的依赖包
+**注意：升级后，python3的版本变为3.6.9，之前系统的3.5.2的包已经无法使用**
+1. 首先安装python3的pip模块
+  ```bash
+  sudo apt-get install python3-pip
+  ```
+2. 安装python3的包
+   **注意：安装pygame的时候，时间比较长，耐心等待**
+  ```bash
+  sudo python3 -m pip install fire ruamel.yaml pygame==1.9.6 python-periphery PyYAML Markdown tornado smbus Pillow numpy
+  ```
