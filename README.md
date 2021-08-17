@@ -351,3 +351,8 @@ pactl load-module module-bluetooth-discover
   sudo python3 -m pip install Pillow
   sudo python3 -m pip install numpy
   ```
+  **注意：如果使用pip安装numpy失败，可以使用如下命令安装numpy**
+  ```bash
+  sudo apt-get install python3-numpy
+  ```
+  
