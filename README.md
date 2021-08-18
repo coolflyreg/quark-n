@@ -305,6 +305,10 @@ pactl load-module module-bluetooth-discover
    ```bash
    sudo apt-get install fswebcam
    ```
+8. 安装python3中的websocket的方法：
+   ```bash
+   sudo aptitude install python3-websocket python3-websockets
+   ```
 
 #### 其他驱动
 - RTL8821CU（8811cu）： https://gitee.com/coolflyreg163/rtl8821cu  内有ko文件，quark-n可直接可使用
@@ -367,6 +371,22 @@ pactl load-module module-bluetooth-discover
   升级的基本的步骤，和从16.04到18.04的步骤1、2、3里的命令是一毛一样的
 
   注意，需要先从16.04升级到18.04
+
+#### 升级到ubuntu 20.04 LTS后，按照如下步骤，安装ui_clock的依赖包
+1. 安装python3的包
+   **注意：安装pygame的时候，时间比较长，耐心等待**
+  ```bash
+  sudo python3 -m pip install fire 
+  sudo python3 -m pip install ruamel.yaml 
+  sudo python3 -m pip install pygame==1.9.6 
+  sudo python3 -m pip install python-periphery 
+  sudo python3 -m pip install PyYAML 
+  sudo python3 -m pip install Markdown 
+  sudo python3 -m pip install tornado 
+  sudo python3 -m pip install smbus
+  sudo python3 -m pip install Pillow
+  sudo python3 -m pip install numpy
+  ```
 
 ### ubuntu的软件源
   ubuntu 18.04的版本代号是**bionic**，ubuntu 20.04的版本的代号是**focal**
