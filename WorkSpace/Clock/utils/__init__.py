@@ -50,3 +50,11 @@ class ColoredFormatter(logging.Formatter):
             record.msg = message_color
             record.funcName = funcName_color
         return logging.Formatter.format(self, record)
+
+def clampPercent(input_value, min_value, max_value):
+    if input_value < min_value:
+        return 0
+    if input_value > max_value:
+        return 100
+    value_range = max_value - min_value
+    return input_value / value_range * 100

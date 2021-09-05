@@ -132,7 +132,7 @@ class RobotUI(BaseUI):
     def is_showing(self):
         return (time.time() * 1000 - self.wakeUpTime) < self.showDuration
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
             self.wakeUpTime = time.time() * 1000
             if self.message is not None:

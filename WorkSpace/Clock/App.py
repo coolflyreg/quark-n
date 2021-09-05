@@ -6,6 +6,7 @@ import threading
 from ruamel.yaml import YAML
 import logging
 import logging.config
+
 import pygame
 import time
 import signal
@@ -31,7 +32,36 @@ logger.critical('critical log')
 ##############
 ### periphery init
 ##############
-gpio_key = GPIO("/dev/gpiochip1", 3, "in")
+
+class GPIOKeyState:
+    gpio_key = None
+    prev_gpio_state = -1
+    gpio_push_state = False
+    gpio_push_start = 0
+    gpio_push_count = 0
+
+    LongPressSeconds = (2,5,10)
+    LongPressSecondsState = [False, False, False]
+
+    def __init__(self, gpio_key):
+        self.gpio_key = gpio_key
+        self.prev_gpio_state = -1
+        self.gpio_push_state = False
+        self.gpio_push_start = 0
+        self.gpio_push_count = 0
+        self.LongPressSeconds = (2,5,10)
+        self.LongPressSecondsState = [False, False, False]
+    pass
+
+gpio_keys = []
+gpio_key1 = GPIO("/dev/gpiochip1", 3, "in")
+gpio_keys.append(GPIOKeyState(gpio_key1))
+try:
+    gpio_key2 = GPIO("/dev/gpiochip1", 4, "in")
+    gpio_keys.append(GPIOKeyState(gpio_key2))
+except: 
+    pass
+
 ledUser = LED("usr_led", True)
 
 ##############
@@ -50,6 +80,13 @@ writePid()
 ##############
 if not os.getenv('SDL_FBDEV'):
     os.putenv('SDL_FBDEV', Config().get('display.device'))#利用quark自带tft屏幕显示
+# if not os.getenv('fbcon'):
+#     os.putenv('fbcon', 'map:1')#利用quark自带tft屏幕显示
+# if not os.getenv('SDL_VIDEODRIVER'):
+    # os.putenv('SDL_VIDEODRIVER', 'DirectFB')#利用quark自带tft屏幕显示
+# if not os.getenv('SDL_RENDER_DRIVER'):
+#     os.putenv('SDL_RENDER_DRIVER', 'fbcon')
+
 
 logger.debug('pygame initing')
 pygame.init()
@@ -59,6 +96,8 @@ pygame.mixer.quit()
 from ui.theme import *
 game_clock = pygame.time.Clock()
 
+# if pygame.version.vernum.major == 2:
+pygame.display.init()
 display_info = pygame.display.Info()
 w = display_info.current_w
 h = display_info.current_h
@@ -67,6 +106,10 @@ window_size=(w,h)
 game_surface = pygame.display.set_mode(window_size, pygame.FULLSCREEN)
 pygame.mouse.set_visible( False )
 mouseLastMotion = 0
+
+
+# num_devices = pygame._sdl2.touch.get_num_devices()
+# logger.debug('Touch Device Count %d' % num_devices)
 
 ##############
 ### UIManager init
@@ -83,15 +126,15 @@ def gotoMenu():
 
 def flashLed():
     # logger.debug('flash led')
-    ledUser.write(255)
+    ledUser.write(ledUser.max_brightness)
     time.sleep(0.1)
     ledUser.write(0)
     time.sleep(0.1)
-    ledUser.write(255)
+    ledUser.write(ledUser.max_brightness)
     time.sleep(0.1)
     ledUser.write(0)
     time.sleep(0.1)
-    ledUser.write(255)
+    ledUser.write(ledUser.max_brightness)
 
 ##############
 ### MPU 6050
@@ -179,70 +222,75 @@ def checkMPU():
 ##############
 ### GPIO Key behaviour
 ##############
-prevSecondIntValue = 0
-prev_gpio_state = -1
-current_gpio_state = 0
-gpio_push_state = False
-gpio_push_start = 0
-gpio_push_count = 0
+# prev_gpio_state = -1
+# gpio_push_state = False
+# gpio_push_start = 0
+# gpio_push_count = 0
 
-LongPressSeconds = (2,5,10)
-LongPressSecondsState = [False, False, False]
+# LongPressSeconds = (2,5,10)
+# LongPressSecondsState = [False, False, False]
+
 
 def checkGPIOKey(onPush, onRelease, onLongPress):
-    global prev_gpio_state, gpio_push_state, gpio_push_start, gpio_push_count, LongPressSeconds, LongPressSecondsState
-    if gpio_key is None:
+    # global prev_gpio_state, gpio_push_state, gpio_push_start, gpio_push_count, LongPressSeconds, LongPressSecondsState
+    global gpio_keys
+    # if gpio_key is None:
+    #     return 0
+    if gpio_keys is None or len(gpio_keys) == 0:
         return 0
-    gpio_state = gpio_key.read()
-    if prev_gpio_state == -1:
-        prev_gpio_state = gpio_state
-        return 0
-    
-    escaped_push_time = (time.time() * 1000) - gpio_push_start
-    long_press_second = int(escaped_push_time / 1000)
-    
-    if gpio_state != prev_gpio_state:
-        if prev_gpio_state == 1: # push
-            gpio_push_state = True
-            gpio_push_start = (time.time() * 1000)
-            if escaped_push_time < 400:
-                gpio_push_count = gpio_push_count + 1
-            if onPush is not None:
-                onPush(gpio_push_count + 1)
-        if prev_gpio_state == 0: # release
-            gpio_push_state = False
-            LongPressSecondsState = [False, False, False]
-            if onRelease is not None:
-                onRelease(escaped_push_time > 2000, gpio_push_count + 1, long_press_second)
-        prev_gpio_state = gpio_state
-        return 1
-    if gpio_push_state:
-        if escaped_push_time > 2000: # long press
-            # gpio_push_state = False
-            # prev_gpio_state = 0
-            if onLongPress is not None and long_press_second in LongPressSeconds:
-                idx = LongPressSeconds.index(long_press_second)
-                if not LongPressSecondsState[idx]:
-                    runAsync(flashLed)
-                    LongPressSecondsState[idx] = True
-                    onLongPress(long_press_second)
-        pass
-    
-    if escaped_push_time > 400 and not gpio_push_state:
-        gpio_push_count = 0
-        # gpio_push_state = False
+    for gpio_key_state_obj in gpio_keys:
+        index = gpio_keys.index(gpio_key_state_obj)
+        gpio_key = gpio_key_state_obj.gpio_key
+        gpio_state = gpio_key.read()
+        if gpio_key_state_obj.prev_gpio_state == -1:
+            gpio_key_state_obj.prev_gpio_state = gpio_state
+            return 0
+        
+        escaped_push_time = pygame.time.get_ticks() - gpio_key_state_obj.gpio_push_start
+        long_press_second = int(escaped_push_time / 1000)
+        
+        if gpio_state != gpio_key_state_obj.prev_gpio_state:
+            if gpio_key_state_obj.prev_gpio_state == 1: # push
+                gpio_key_state_obj.gpio_push_state = True
+                gpio_key_state_obj.gpio_push_start = pygame.time.get_ticks()
+                if escaped_push_time < 400:
+                    gpio_key_state_obj.gpio_push_count = gpio_key_state_obj.gpio_push_count + 1
+                if onPush is not None:
+                    onPush(gpio_key_state_obj.gpio_push_count + 1, index)
+            if gpio_key_state_obj.prev_gpio_state == 0: # release
+                gpio_key_state_obj.gpio_push_state = False
+                gpio_key_state_obj.LongPressSecondsState = [False, False, False]
+                if onRelease is not None:
+                    onRelease(escaped_push_time > 2000, gpio_key_state_obj.gpio_push_count + 1, long_press_second, index)
+            gpio_key_state_obj.prev_gpio_state = gpio_state
+            return 1
+        if gpio_key_state_obj.gpio_push_state:
+            if escaped_push_time > 2000: # long press
+                # gpio_key_state_obj.gpio_push_state = False
+                # gpio_key_state_obj.prev_gpio_state = 0
+                if onLongPress is not None and long_press_second in gpio_key_state_obj.LongPressSeconds:
+                    idx = gpio_key_state_obj.LongPressSeconds.index(long_press_second)
+                    if not gpio_key_state_obj.LongPressSecondsState[idx]:
+                        runAsync(flashLed)
+                        gpio_key_state_obj.LongPressSecondsState[idx] = True
+                        onLongPress(long_press_second, index)
+            pass
+        
+        if escaped_push_time > 400 and not gpio_key_state_obj.gpio_push_state:
+            gpio_key_state_obj.gpio_push_count = 0
+            # gpio_key_state_obj.gpio_push_state = False
 
     return 0
 
-def gpioKeyPush(pushCount):
-    logger.debug('gpioKeyPush pushCount %d', pushCount)
-    ledUser.write(255)
-    uiManager.current().onKeyPush(pushCount)
+def gpioKeyPush(pushCount, keyIndex):
+    logger.debug('gpioKeyPush pushCount %d on key[%d]', pushCount, keyIndex)
+    ledUser.write(ledUser.max_brightness)
+    uiManager.current().onKeyPush(pushCount, keyIndex)
     pass
 
-def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
-    logger.debug('gpioKeyRelease isLongPress %d pushCount %d longPressSeconds %d', isLongPress, pushCount, longPressSeconds)
-    if uiManager.current().onKeyRelease(isLongPress, pushCount, longPressSeconds):
+def gpioKeyRelease(isLongPress, pushCount, longPressSeconds, keyIndex):
+    logger.debug('gpioKeyRelease isLongPress %d pushCount %d longPressSeconds %d on key[%d]', isLongPress, pushCount, longPressSeconds, keyIndex)
+    if uiManager.current().onKeyRelease(isLongPress, pushCount, longPressSeconds, keyIndex):
         return
     # if not isLongPress and pushCount == 1:
         # pass
@@ -253,9 +301,9 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds):
     ledUser.write(0)
     pass
 
-def gpioKeyLongPress(escapedSeconds):
+def gpioKeyLongPress(escapedSeconds, keyIndex):
     # ledUser.write(0)
-    logger.debug('long press %d', escapedSeconds)
+    logger.debug('long press %d on key[%d]', escapedSeconds, keyIndex)
     if escapedSeconds == 2:
         pass
     elif escapedSeconds == 5:
@@ -303,7 +351,7 @@ def drawLongPressStateView(escaped_push_time, current_x, bg_color):
         nextTxt = miniFont.render('MENU', True, color_black)
         screenTxt = miniFont.render('VIEW', True, color_black)
 
-    pygame.draw.rect(game_surface, bg_color, (0, 0, current_x, 135))
+    pygame.draw.rect(game_surface, bg_color, (0, 0, current_x, window_size[1]))
     if powerTxt is not None:
         game_surface.blit(powerTxt, (power_x, 8), area=(0, 0, current_x - power_x, powerTxt.get_height()))
         if powerOffRemain is not None:
@@ -319,9 +367,9 @@ def drawLongPressStateView(escaped_push_time, current_x, bg_color):
 
 current_PowerOff_x = 0
 def drawLongPressState():
-    global current_PowerOff_x
-    escaped_push_time = (time.time() * 1000) - gpio_push_start
-    if gpio_push_state and escaped_push_time > 400:
+    global current_PowerOff_x, gpio_keys
+    escaped_push_time = pygame.time.get_ticks() - gpio_keys[0].gpio_push_start
+    if gpio_keys[0].gpio_push_state and escaped_push_time > 400:
         current_x = w * (escaped_push_time / 10000)
         current_PowerOff_x = current_x
     elif current_PowerOff_x > 0:
@@ -349,7 +397,7 @@ def drawLongPressState():
 ##############
 def _signal_handler(signal, frame):
     print('_signal_handler', signal, frame)
-    global uiManager, ledUser, gpio_key
+    global uiManager, ledUser, gpio_keys
     service.stop_server()
     # time.sleep(1)
     # logger.debug('threading.active_count() = %d', threading.active_count())
@@ -358,9 +406,11 @@ def _signal_handler(signal, frame):
     if ledUser is not None:
         ledUser.close()
         ledUser = None
-    if gpio_key is not None:
-        gpio_key.close()
-        gpio_key = None
+    if gpio_keys is not None :
+        for gpio_key_state_obj in gpio_keys:
+            if gpio_key_state_obj.gpio_key is not None:
+                gpio_key_state_obj.gpio_key.close()
+                gpio_key_state_obj.gpio_key = None
     pidFile = Config().get('monitor.pid-file', '/run/ui_clock.pid')
     if (os.path.exists(pidFile) and os.path.isfile(pidFile)):
         os.remove(pidFile)
@@ -373,6 +423,9 @@ def main():
     global uiManager
     global mouseLastMotion
 
+    surface2 = uiManager.surface.convert_alpha()
+    surface2.fill((255,255,255,0))
+
     MenuUI_name = MenuUI.__name__
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
@@ -381,6 +434,7 @@ def main():
 
     while uiManager.isRunning():
         for event in pygame.event.get():
+            # logger.debug('event = {}'.format(event))
             if event.type == pygame.QUIT:
                 uiManager.quit()
                 return

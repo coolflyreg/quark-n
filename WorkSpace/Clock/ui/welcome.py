@@ -47,7 +47,7 @@ class WelcomeUI(BaseUI):
             
             # print("render welcome text")
         else:
-            self.launcher_img.render(surface, (0, -10))
+            self.launcher_img.render(surface, (int(window_width/2-self.launcher_img.get_width()/2), int(window_height/2-self.launcher_img.get_height()/2)))
             # print("render welcome img")
             if ((time.time() * 1000) - self.showTick) > 1600:
                 from .clock import ClockUI

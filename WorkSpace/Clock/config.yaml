@@ -1,8 +1,8 @@
 # 后台管理端
 server:
   enable: true
-  # ip 地址，如需从外部访问，需要改为192开头的IP
-  host: 192.168.1.206
+  # ip 地址
+  host: 0.0.0.0
   # 端口号
   port: 4096
   # cookie 的 secret ，用于对 cookie 的内容进行加密及防止篡改
@@ -53,6 +53,8 @@ robot:
 
 # 界面设置
 user-interface:
+  clock:
+    style: 2
   mpu-motion: false
   # 启动图设置
   launcher:

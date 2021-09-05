@@ -82,7 +82,7 @@ class MPU6050UI(BaseUI):
     def on_hidden(self):
         pass
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
             self.showType.next()
             self.checkSettings()
