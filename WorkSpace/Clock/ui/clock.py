@@ -307,8 +307,6 @@ class ClockUI(BaseUI):
 
         rxStr = '' + str(self.RX_RATE) + ' M/s'
         txStr = '' + str(self.TX_RATE) + ' M/s'
-        netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont22.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
-        netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont22.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
 
         ip = self.hostIp
         # ip = '192.168.255.255'
@@ -335,8 +333,32 @@ class ClockUI(BaseUI):
         sysText = self.get_cache('sysText_{}'.format(sysTitle), lambda: smallFont.render(sysTitle, True, color_white))
 
         if window_width == 320:
-            pass
+            netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
+            netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
+            timeFontSize = 100
+            timeSpText = self.get_cache('timeText_{}'.format(':'), lambda: getAppFont(timeFontSize, 'DIGIT').render(':', True, color_green)) # largeFont
+            timeHourText = self.get_cache('timeHourText_{}'.format(shour), lambda: getAppFont(timeFontSize, 'DIGIT').render(shour, True, color_green)) # largeFont
+            timeMinuteText = self.get_cache('timeMinuteText_{}'.format(minute), lambda: getAppFont(timeFontSize, 'DIGIT').render(minute, True, color_green)) # largeFont
+
+            surface.blit(sysText,((window_width - sysText.get_width()) / 2, -6))
+            monthText = self.get_cache('monthText_{} {}'.format(year + '-' + month + '-' + date, day), lambda: middleFont.render(year + '-' + month + '-' + date + ' ' + day, True, color_green))
+            y = (window_height - timeMinuteText.get_height()) / 2
+            # surface.blit(timeText, ((window_width - timeText.get_width()) / 2, y))
+            surface.blit(timeHourText, ((window_width / 2 - timeHourText.get_width() - timeSpText.get_width() / 2), y))
+            surface.blit(timeMinuteText, ((window_width / 2 + timeSpText.get_width() / 2), y))
+            if self.hide_second_symbol is True:
+                surface.blit(timeSpText, ((window_width - timeSpText.get_width()) / 2, y))
+            # surface.blit(secondText, (190, 52))
+            x = (window_width - monthText.get_width()) / 2
+            surface.blit(monthText, (x, y + timeMinuteText.get_height()))
+
+            surface.blit(ipText,((window_width - ipText.get_width()) / 2, 28))
+            surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width() - 14, window_height - netSpeedInText.get_height() + 2))
+            surface.blit(netSpeedOutText, ((window_width - 14) / 2 - netSpeedOutText.get_width(), window_height - netSpeedOutText.get_height() + 2))
+            
         else:
+            netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont22.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
+            netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont22.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
             timeFontSize = 64
             timeSpText = self.get_cache('timeText_{}'.format(':'), lambda: getAppFont(timeFontSize, 'DIGIT').render(':', True, color_green)) # largeFont
             timeHourText = self.get_cache('timeHourText_{}'.format(shour), lambda: getAppFont(timeFontSize, 'DIGIT').render(shour, True, color_green)) # largeFont
