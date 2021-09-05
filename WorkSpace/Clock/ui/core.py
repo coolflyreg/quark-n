@@ -73,7 +73,6 @@ class UIManager(metaclass=Singleton):
         self.robotUI = RobotUI(0)
         add_ui(WelcomeUI)
         add_ui(ClockUI)
-        add_ui(ClockUI)
         add_ui(MenuUI)
         add_ui(LaunchersUI)
         add_ui(WuKongMenuUI)
