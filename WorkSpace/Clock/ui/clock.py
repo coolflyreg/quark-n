@@ -144,51 +144,8 @@ class ClockUI(BaseUI):
         indicator_merge_space = 4
         w_height = window_height
         if window_height == 240:
-            indicator_line_count = 18
-        if window_height == 135:
-            indicator_line_count = 19
-            # w_height -= 1
-
-        value_step = 100 / indicator_line_count
-
-        indicator_line_space = 2
-        indicator_line_height = (w_height - indicator_merge_space - indicator_line_space * indicator_line_count + indicator_line_space) / indicator_line_count
-        top_count = 4 # 最上方长条的数量
-        base_width = indicator_line_height
-        normal_width_step = 1
-        for y_index in range(indicator_line_count, -1, -1):
-            if y_index >= (indicator_line_count - top_count):
-                width = (2 * (top_count - (indicator_line_count - y_index)) * (top_count - (indicator_line_count - y_index))) + (y_index * normal_width_step + base_width)
-                if y_index == indicator_line_count:
-                    fill_color = (255,0,0)
-                elif y_index == indicator_line_count - 1:
-                    fill_color = (255,128,0)
-                elif y_index == indicator_line_count - 2:
-                    fill_color = (255,198,0)
-                elif y_index == indicator_line_count - 3:
-                    fill_color = (255,255,0)
-                elif y_index == indicator_line_count - 4:
-                    fill_color = (184,255,0)
-            else:
-                width = normal_width_step * y_index + base_width
-                fill_color = (0,255,0)
-            y = y_index * indicator_line_height - indicator_merge_space / 2 + (y_index * indicator_line_space + indicator_line_space)
-
-            pygame.draw.rect(surface, (128,128,200), (0 if right == False else (window_width - width), window_height - y, width, indicator_line_height), 1)
-
-            if (percentValue / value_step) >= y_index:
-                surface.fill(fill_color, (0 if right == False else (window_width - width), window_height - y, width, indicator_line_height))
-
-    def drawLineIndicator(self, surface, percentValue, right = False):
-        surface = UIManager().getSurface()
-        windowSize = UIManager().getWindowSize()
-        window_width = windowSize[0]
-        window_height = windowSize[1]
-
-        indicator_merge_space = 4
-        w_height = window_height
-        if window_height == 240:
-            indicator_line_count = 18
+            indicator_merge_space = 6
+            indicator_line_count = 26
         if window_height == 135:
             indicator_line_count = 19
             # w_height -= 1
