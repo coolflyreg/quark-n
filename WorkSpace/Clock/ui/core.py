@@ -9,6 +9,7 @@ import signal
 from queue import Queue
 from core import Singleton, Event, EventDispatcher
 from system.config import Config
+import pygame
 
 
 class UIManager(metaclass=Singleton):
@@ -31,6 +32,7 @@ class UIManager(metaclass=Singleton):
 
     def setWindowSize(self, window_size):
         self.window_size = window_size
+        # self.window_size = (240, 135)
 
     def setSurface(self, surface):
         self.surface = surface
@@ -62,6 +64,7 @@ class UIManager(metaclass=Singleton):
         from .wukongMenu import WuKongMenuUI
         from .camera import CameraUI
         from .album import AlbumUI
+        from .video import VideoUI
         from .mpu6050 import MPU6050UI
         from .threeD import ThreeDUI
 
@@ -76,6 +79,7 @@ class UIManager(metaclass=Singleton):
         add_ui(WuKongMenuUI)
         add_ui(CameraUI)
         add_ui(AlbumUI)
+        add_ui(VideoUI)
         add_ui(MPU6050UI)
         add_ui(ThreeDUI)
 
@@ -97,6 +101,22 @@ class UIManager(metaclass=Singleton):
 
         if self._currentDialog() is not None:
             self._currentDialog().update()
+
+        ###
+        ### DEBUG FOR UI ELEMENT POSITION
+        ###
+        # pygame.draw.lines(self.surface, (255,255,255), True, 
+        #     [(0, 0), 
+        #      (self.window_size[0] - 1, 0), 
+        #      (self.window_size[0] - 1, self.window_size[1] - 1), 
+        #      (0, self.window_size[1] - 1)], 1)
+        # for x in range(0, self.window_size[0], 10):
+        #     pygame.draw.line(self.surface, (255,255,255), (x, 0), (x, (5 if x % 50 != 0 else 10)), 1)
+        #     pygame.draw.line(self.surface, (255,255,255), (x, self.window_size[1] - 1), (x, self.window_size[1] - (6 if x % 50 != 0 else 11)), 1)
+        #     for y in range(0, self.window_size[1], 10):
+        #         if x == 0:
+        #             pygame.draw.line(self.surface, (255,255,255), (x,y), (x + (5 if y % 50 != 0 else 10), y), 1)
+        #             pygame.draw.line(self.surface, (255,255,255), (self.window_size[0] - 1,y), (self.window_size[0] - (6 if y % 50 != 0 else 11), y), 1)
 
         for ui_name in self.__ui_dict:
             if self.__ui_dict[ui_name] is not self._current():
@@ -226,13 +246,22 @@ class BaseUI:
     def onMouseWheel(self, event):
         pass
 
-    def onKeyPush(self, pushCount):
+    def onTouchStart(self, event):
         pass
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onTouchMove(self, event):
         pass
 
-    def onKeyLongPress(self, escapedSeconds):
+    def onTouchEnd(self, event):
+        pass
+
+    def onKeyPush(self, pushCount, keyIndex):
+        pass
+
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
+        pass
+
+    def onKeyLongPress(self, escapedSeconds, keyIndex):
         pass
 
     def onMpu(self, activities):

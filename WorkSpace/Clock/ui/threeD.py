@@ -37,7 +37,7 @@ class ThreeDUI(BaseUI):
         self.canvasWidth = windowSize[0]
         self.canvasHeight = windowSize[1]
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
             self.showType.next()
         if isLongPress and longPressSeconds == 2:

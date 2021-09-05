@@ -149,10 +149,10 @@ class ConfirmDialogUI(DialogBaseUI):
         self.onCancel = onCancel
         self.title = confirmText
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
-        return self.menu.onKeyRelease(isLongPress, pushCount, longPressSeconds)
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
+        return self.menu.onKeyRelease(isLongPress, pushCount, longPressSeconds, keyIndex)
 
-    def onKeyPush(self, pushCount):
+    def onKeyPush(self, pushCount, keyIndex):
         pass
 
     def onMouseUp(self, event):

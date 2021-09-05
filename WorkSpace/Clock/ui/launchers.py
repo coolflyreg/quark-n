@@ -30,7 +30,7 @@ class LaunchersUI(BaseUI):
     def on_hidden(self):
         pass
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
             if (self.target_index + 1) >= len(self.images):
                 self.target_index = 0
@@ -48,6 +48,27 @@ class LaunchersUI(BaseUI):
                 return True
         return False
     
+    def onMouseUp(self, event):
+        windowSize = UIManager().getWindowSize()
+        window_width = windowSize[0]
+        window_height = windowSize[1]
+        leftRect = pygame.Rect(3, 5, window_width / 2 - 3, window_height - 10)
+        rightRect = pygame.Rect(window_width / 2, 5, window_width / 2, window_height - 10)
+        if len(self.images) == 0:
+            return
+        if leftRect.collidepoint(event.pos):
+            if (self.target_index - 1) < 0:
+                self.target_index = len(self.images) - 1
+            else:
+                self.target_index = self.target_index - 1
+        if rightRect.collidepoint(event.pos):
+            if (self.target_index + 1) >= len(self.images):
+                self.target_index = 0
+            else:
+                self.target_index = self.target_index + 1
+        self.launcher_img = GIFImage(os.path.join(sys.path[0], self.images[self.target_index]))
+        pass
+
     def saveSetting(self):
         if self.launcher_img is not None:
             Config().set('user-interface.launcher.current', self.target_index)

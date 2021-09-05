@@ -5,13 +5,14 @@ import os
 import time
 import re
 import socket
+from utils import clampPercent
 
 def cputempf():
     f = open("/sys/class/thermal/thermal_zone0/temp")
     CPUTemp = f.read()
     f.close()
     StringToOutput = "CPU {0} C".format(round(int(CPUTemp) /1000.0, 2))
-    return StringToOutput
+    return StringToOutput, int(CPUTemp) /1000.0
 
 # Return % of CPU used by user as a character string
 # def getCPUuse():
@@ -137,5 +138,23 @@ def get_disk_info():
     disk_info['used'] = disk_info_lines[1]
     disk_info['free'] = disk_info_lines[2]
     disk_info['percent'] = disk_info_lines[3]
+
+    def parseToByteCount(str_val):
+        unit = str_val[-1:]
+        val = float(str_val[:-1])
+        if (unit == 'G'):
+            val = val * 1024 * 1024 * 1024
+        if (unit == 'M'):
+            val = val * 1024 * 1024
+        if (unit == 'K'):
+            val = val * 1024
+        return val
+
+    total = parseToByteCount(disk_info['total'])
+    used = parseToByteCount(disk_info['used'])
+    free = parseToByteCount(disk_info['free'])
+
+    disk_info['used_percent'] = clampPercent(used, 0, total)
+    disk_info['free_percent'] = clampPercent(free, 0, total)
 
     return disk_info

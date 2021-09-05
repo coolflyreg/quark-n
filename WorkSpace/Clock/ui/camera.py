@@ -91,7 +91,7 @@ class CameraUI(MenuUI):
         super().on_hidden()
         pass
 
-    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds):
+    def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
             if len(self.drivers) == 0:
                 from .menu import MenuUI
@@ -100,7 +100,7 @@ class CameraUI(MenuUI):
             if self.ask_save_pic is False:
                 self.ask_save_pic = True
             if self.ask_save_pic:
-                super().onKeyRelease(isLongPress, pushCount, longPressSeconds)
+                super().onKeyRelease(isLongPress, pushCount, longPressSeconds, keyIndex)
             return True
         if isLongPress:
             if longPressSeconds == 2:
