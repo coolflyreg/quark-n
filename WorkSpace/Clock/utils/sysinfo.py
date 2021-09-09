@@ -4,6 +4,7 @@
 import os
 import time
 import re
+import json
 import socket
 from utils import clampPercent
 
@@ -158,3 +159,25 @@ def get_disk_info():
     disk_info['free_percent'] = clampPercent(free, 0, total)
 
     return disk_info
+
+
+def get_battery_info():
+    battery_filepath = '/var/battery/info.json'
+    if os.path.exists(battery_filepath):
+        try:
+            f = open(battery_filepath, 'r')
+            content = f.read()
+            f.close()
+            jsonObj = json.loads(content)
+            vbat = float(jsonObj['vbat'])
+            vout = float(jsonObj['vout'])
+            chgr_current = float(jsonObj['chgr_current'])
+            out_current = float(jsonObj['out_current'])
+            return {
+                'percent': clampPercent(vbat, 3.0, (3.72 if chgr_current == 0 else 4.2)),
+                'in_charge': (chgr_current > 0)
+            }
+        except:
+            # print (e)
+            return None
+    return None

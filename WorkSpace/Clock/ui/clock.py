@@ -183,6 +183,50 @@ class ClockUI(BaseUI):
             if (percentValue / value_step) >= y_index:
                 surface.fill(fill_color, (0 if right == False else (window_width - width), window_height - y, width, indicator_line_height))
 
+    def drawBatteryInfo(self, surface, x, y, width):
+        battery_info = get_battery_info()
+        if battery_info is None:
+            # logger.warn('no battery info')
+            return
+
+        height = width / 3
+        head_height = int(height / 2 + (height % 2))
+        head_width = 3
+        total_value_width = width - head_width - 4
+
+        percentValue = battery_info['percent']
+        # logger.info('battrery percent value %f', percentValue)
+        value_width = total_value_width * (percentValue / 100)
+
+        pygame.draw.rect(surface, (230,230,230), (x, y + (height / 2 - head_height / 2), head_width + 1, head_height), 1)
+
+        pygame.draw.rect(surface, (230,230,230), (x + head_width, y, width - head_width, height), 1)
+        surface.fill((255,255,255), (x + head_width + 2, y + 2, value_width, height - 4))
+
+        if battery_info['in_charge']:
+            # surface.fill((0,0,0), (x + head_width + , y + 1, value_width, height - 2))
+            
+            # points = [
+            #     (x + head_width + width * 0.2, y + height * 0.1),
+            #     (x + head_width + width * 0.6, y + height * 0.1),
+            #     (x + head_width + width * 0.5, y + height * 0.6),
+            #     (x + head_width + width * 0.8, y + height * 0.9),
+            #     (x + head_width + width * 0.3, y + height * 0.9),
+            #     (x + head_width + width * 0.4, y + height * 0.4),
+            #     (x + head_width + width * 0.2, y + height * 0.1)
+            # ]
+            # pygame.draw.lines(surface, (0,200,0), False, points, 1)
+            points = [
+                (x + head_width + width * 0.2, y + height * 0),
+                (x + head_width + width * 0.6, y + height * 0.1),
+                (x + head_width + width * 0.3, y + height * 0.9),
+                (x + head_width + width * 0.7, y + height * 1)
+            ]
+            pygame.draw.lines(surface, (0,0,0), False, points, 5)
+            pygame.draw.lines(surface, (0,230,0), False, points, 3)
+            pass
+        pass
+
     def update(self, surface = None):
         if self.ui_style == 1:
             self.update_style_1(surface)
@@ -258,11 +302,11 @@ class ClockUI(BaseUI):
         shour = str(hour)
         if len(shour) == 1:
             shour = '0' + shour
-        timeStr = shour + ':' + minute
-        timeStr = '88:88'
+        # timeStr = shour + ':' + minute
+        # timeStr = '88:88'
 
         # timeText = largeFont.render(timeStr, True, color_green)
-        secondText = self.get_cache('secondText_{}'.format(second), lambda: middleFont.render(second, True, color_green))
+        # secondText = self.get_cache('secondText_{}'.format(second), lambda: middleFont.render(second, True, color_green))
         # amText = self.get_cache('amText_{}'.format(am), lambda: middleFont.render(am, True, color_green))
 
         rxStr = '' + str(self.RX_RATE) + ' M/s'
@@ -292,7 +336,7 @@ class ClockUI(BaseUI):
 
         sysText = self.get_cache('sysText_{}'.format(sysTitle), lambda: smallFont.render(sysTitle, True, color_white))
 
-        if window_width == 320:
+        if window_width == 320 or window_width == 480:
             netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
             netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
             timeFontSize = 100
@@ -316,6 +360,7 @@ class ClockUI(BaseUI):
             surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width() - 14, window_height - netSpeedInText.get_height() + 2))
             surface.blit(netSpeedOutText, ((window_width - 14) / 2 - netSpeedOutText.get_width(), window_height - netSpeedOutText.get_height() + 2))
             
+            self.drawBatteryInfo(surface, window_width - 120, 10, 33)
         else:
             netSpeedInText = self.get_cache('rxStr_{}'.format(rxStr), lambda: tinyFont22.render(rxStr, True, color_green if self.RX_RATE > 0 else color_white))
             netSpeedOutText = self.get_cache('txStr_{}'.format(txStr), lambda: tinyFont22.render(txStr, True, color_green if self.TX_RATE > 0 else color_white))
