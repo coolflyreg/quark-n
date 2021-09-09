@@ -62,7 +62,11 @@ try:
 except: 
     pass
 
-ledUser = LED("usr_led", True)
+try:
+    ledUser = LED("usr_led", True)
+except:
+    logger.warn('There is no usr_led periphery')
+    ledUser = None
 
 ##############
 ### pid file init
@@ -126,6 +130,8 @@ def gotoMenu():
 
 def flashLed():
     # logger.debug('flash led')
+    if ledUser is None:
+        return
     ledUser.write(ledUser.max_brightness)
     time.sleep(0.1)
     ledUser.write(0)
@@ -275,7 +281,7 @@ def checkGPIOKey(onPush, onRelease, onLongPress):
                         gpio_key_state_obj.LongPressSecondsState[idx] = True
                         onLongPress(long_press_second, index)
             pass
-        
+ 
         if escaped_push_time > 400 and not gpio_key_state_obj.gpio_push_state:
             gpio_key_state_obj.gpio_push_count = 0
             # gpio_key_state_obj.gpio_push_state = False
@@ -284,7 +290,8 @@ def checkGPIOKey(onPush, onRelease, onLongPress):
 
 def gpioKeyPush(pushCount, keyIndex):
     logger.debug('gpioKeyPush pushCount %d on key[%d]', pushCount, keyIndex)
-    ledUser.write(ledUser.max_brightness)
+    if ledUser is not None:
+        ledUser.write(ledUser.max_brightness)
     uiManager.current().onKeyPush(pushCount, keyIndex)
     pass
 
@@ -298,7 +305,8 @@ def gpioKeyRelease(isLongPress, pushCount, longPressSeconds, keyIndex):
         if longPressSeconds > 2 and longPressSeconds < 5:
             gotoMenu()
             pass
-    ledUser.write(0)
+    if ledUser is not None:
+        ledUser.write(0)
     pass
 
 def gpioKeyLongPress(escapedSeconds, keyIndex):
@@ -315,7 +323,7 @@ def gpioKeyLongPress(escapedSeconds, keyIndex):
         os.kill()
         logger.info("Power Off")
         pass
-        
+
     pass
 
 def mouseIsVisible():
@@ -414,7 +422,7 @@ def _signal_handler(signal, frame):
     pidFile = Config().get('monitor.pid-file', '/run/ui_clock.pid')
     if (os.path.exists(pidFile) and os.path.isfile(pidFile)):
         os.remove(pidFile)
-    
+
 ##############
 ### main loop
 ##############

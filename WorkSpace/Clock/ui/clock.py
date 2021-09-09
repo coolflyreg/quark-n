@@ -143,6 +143,9 @@ class ClockUI(BaseUI):
 
         indicator_merge_space = 4
         w_height = window_height
+        if window_height == 320:
+            indicator_merge_space = 10
+            indicator_line_count = 22
         if window_height == 240:
             indicator_merge_space = 6
             indicator_line_count = 26
