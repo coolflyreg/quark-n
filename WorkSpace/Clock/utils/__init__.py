@@ -57,4 +57,4 @@ def clampPercent(input_value, min_value, max_value):
     if input_value > max_value:
         return 100
     value_range = max_value - min_value
-    return input_value / value_range * 100
+    return (input_value - min_value) / value_range * 100
