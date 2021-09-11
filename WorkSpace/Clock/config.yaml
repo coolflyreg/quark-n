@@ -54,16 +54,17 @@ robot:
 # 界面设置
 user-interface:
   clock:
-    style: 2
+    style: 3
   mpu-motion: false
   # 启动图设置
   launcher:
     # 当前第几个启动图
-    current: 1
+    current: 2
     # 启动图列表，尺寸240*135
     images:
     - images/launcher/launcher_240.gif
     - images/launcher/launcher_240_2.gif
+    - images/launcher/launcher_240_3.gif
   # 不要改动
   manager:
     class: display.ui.core.UIManager

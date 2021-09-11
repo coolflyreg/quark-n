@@ -89,8 +89,8 @@ class ClockUI(BaseUI):
     def on_shown(self):
         # if int(Config().get('user-interface.clock.style')) is not None:
         style = int(Config().get('user-interface.clock.style', 2))
-        if style < 1 or style > 2:
-            self.ui_style = 2
+        if style < 1 or style > 3:
+            self.ui_style = 1
         else:
             self.ui_style = style
         # else:
@@ -232,6 +232,8 @@ class ClockUI(BaseUI):
             self.update_style_1(surface)
         if self.ui_style == 2:
             self.update_style_2(surface)
+        if self.ui_style == 3:
+            self.update_style_3(surface)
 
     def update_style_2(self, surface = None):
         surface = UIManager().getSurface()
@@ -462,8 +464,8 @@ class ClockUI(BaseUI):
             shour = '0' + shour
         timeStr = shour + ':' + minute
         # timeText = largeFont.render(timeStr, True, color_green)
-        secondText = self.get_cache('secondText_{}'.format(second), lambda: middleFont.render(second, True, color_green))
-        amText = self.get_cache('amText_{}'.format(am), lambda: middleFont.render(am, True, color_green))
+        secondText = self.get_cache('secondText_{}'.format(second), lambda: middleFont.render(second, True, color_msgreen))
+        amText = self.get_cache('amText_{}'.format(am), lambda: middleFont.render(am, True, color_msgreen))
 
         if self.sysInfoShowType.current() == 0:
             sysText = self.get_cache('sysText_{}'.format(self.cputemp), lambda: smallFont.render(self.cputemp, True, color_white))
@@ -504,10 +506,10 @@ class ClockUI(BaseUI):
                 surface.blit(ipText,(10, window_height - 23))
                 surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width(), window_height - 23))
         else:
-            timeText = self.get_cache('timeText_{}'.format(timeStr), lambda: getAppFont(82, 'DIGIT').render(timeStr, True, color_green)) # largeFont
+            timeText = self.get_cache('timeText_{}'.format(timeStr), lambda: getAppFont(82, 'DIGIT').render(timeStr, True, color_msgreen)) # largeFont
             # yearText = self.get_cache('yearText_{}'.format(year), lambda: smallFont.render(year, True, color_green))
-            dayText = self.get_cache('dayText_{}'.format(day), lambda: getAppFont(24, 'PingFang').render(day, True, color_green))
-            monthText = self.get_cache('monthText_{}'.format(year + '-' + month + '-' + date), lambda: smallFont.render(year + '-' + month + '-' + date, True, color_green))
+            dayText = self.get_cache('dayText_{}'.format(day), lambda: getAppFont(24, 'PingFang').render(day, True, color_msgreen))
+            monthText = self.get_cache('monthText_{}'.format(year + '-' + month + '-' + date), lambda: smallFont.render(year + '-' + month + '-' + date, True, color_msgreen))
             surface.blit(sysText, (10,0))
             surface.blit(sysUseText, (window_width - sysUseText.get_width() - 2,0))
             surface.blit(timeText, (4,16))
@@ -525,6 +527,80 @@ class ClockUI(BaseUI):
                 surface.blit(ipText,(10, window_height - 23))
                 surface.blit(netSpeedInText, (window_width - netSpeedInText.get_width(), window_height - 23))
         
+        self.prevSecondIntValue = secondIntValue
+        # welcomeTxt = bigFont.render(ClockUI.__name__, True, color_white)
+        # surface.blit(welcomeTxt, (window_width / 2 - welcomeTxt.get_width() / 2, window_height / 2 - welcomeTxt.get_height() / 2))
+
+        # pygame.draw.rect(surface, (255,255,255), self.sysInfoRect, 1)
+        # pygame.draw.rect(surface, (255,255,255), self.timeRect, 1)
+        # pygame.draw.rect(surface, (255,255,255), self.dateRect, 1)
+        # pygame.draw.rect(surface, (255,255,255), self.netRect, 1)
+        pass
+
+    def update_style_3(self, surface = None):
+        surface = UIManager().getSurface()
+        windowSize = UIManager().getWindowSize()
+        window_width = windowSize[0]
+        window_height = windowSize[1]
+        surface.fill(color_black)
+
+        now = datetime.now()
+
+        minute = now.strftime('%M')
+        hour = int(now.strftime('%H'))
+        second = now.strftime('%S')
+        secondIntValue = int(second)
+
+        if self.prevSecondIntValue != secondIntValue:
+            # GET SYS INFO
+            self.memInfo = get_mem_info()
+            self.dskInfo = get_disk_info()
+            self.hostIp = get_host_ip()
+            cpuInfo = readCpuInfo()
+            self.cpuUse = str(round(calcCpuUsage(self.lastCpuInfo, cpuInfo), 1)) # getCPUuse()
+            self.lastCpuInfo = cpuInfo
+
+
+        if secondIntValue % 5 == 0:
+            # GET CPU TEMP
+            cputempStr, cpuTempValue = cputempf()
+            self.cputemp = cputempStr
+            self.cputempValue = cpuTempValue
+            
+        # Final USE Info
+        cpuUse = "CPU use " + str(self.cpuUse)
+        # cputemp = "CPU temp " + str(self.cputempValue) + "C" 
+        cputemp = "CPU temp {0}C".format(round(self.cputempValue, 1))
+        memInfo = self.memInfo
+        dskInfo = self.dskInfo
+        hostIp = str(self.hostIp)       
+        #memStr = "MEM {0}M".format(memInfo['free'])
+        memUse = "MEM use " + str(memInfo['percent'])
+        #dskStr = "DSK {0}".format(dskInfo['free'])
+        dskUse = "DSK use " + str(dskInfo['percent'])
+
+        shour = str(hour)
+        if len(shour) == 1:
+            shour = '0' + shour
+        timeStr = shour + ':' + minute
+
+        timeText = self.get_cache('timeText_{}'.format(timeStr), lambda: getAppFont(88, 'SCORE').render(timeStr, True, color_cyan))
+        secondText = self.get_cache('secondText_{}'.format(second), lambda: getAppFont(44, 'SCORE').render(second, True, color_cyan))
+        if self.sysInfoShowType.current() == 0:
+            info1 = self.get_cache('sysUseText_{}'.format(cputemp), lambda: getAppFont(18, 'SCORE').render(cputemp, True, color_gray))
+            info2 = self.get_cache('ip_{}'.format(hostIp), lambda: getAppFont(18, 'SCORE').render(hostIp, True, color_gray))
+        if self.sysInfoShowType.current() == 1:
+            info1 = self.get_cache('sysUseText_{}'.format(memUse), lambda: getAppFont(18, 'SCORE').render(memUse + '%', True, color_gray))
+            info2 = self.get_cache('sysUseText_{}'.format(dskUse), lambda: getAppFont(18, 'SCORE').render(dskUse, True, color_gray))
+        if self.sysInfoShowType.current() == 2:
+            info1 = self.get_cache('sysUseText_{}'.format(cputemp), lambda: getAppFont(18, 'SCORE').render(cputemp, True, color_gray))
+            info2 = self.get_cache('sysUseText_{}'.format(self.cputemp), lambda: getAppFont(18, 'SCORE').render(str(cpuUse) + '%', True, color_gray))
+
+        surface.blit(timeText, (5,2))
+        surface.blit(info1, (9,90))
+        surface.blit(info2, (9,112))
+        surface.blit(secondText, (190, 88))
+       
         self.prevSecondIntValue = secondIntValue
         # welcomeTxt = bigFont.render(ClockUI.__name__, True, color_white)
         # surface.blit(welcomeTxt, (window_width / 2 - welcomeTxt.get_width() / 2, window_height / 2 - welcomeTxt.get_height() / 2))

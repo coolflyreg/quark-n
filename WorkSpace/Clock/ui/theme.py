@@ -8,7 +8,10 @@ import pygame
 _FontCache = []
 _FontNames = {
     'DIGIT': "fonts/DS-DIGIT.TTF",
-    'PingFang': "fonts/PingFang.ttc"
+    'PingFang': "fonts/PingFang.ttc",
+    'DIGITAL': "fonts/DIGITAL.TTF",
+    'SCORE': "fonts/SCOREBOARD.TTF",
+    'PROTFB' : "fonts/PRO-TFB.TTF"
 }
 
 class FontObj:
@@ -55,6 +58,10 @@ color_white = (255,255,255)
 color_black = (0,0,0)
 color_green = (0,255,0)
 color_red = (255,0,0)
+color_cyan = (0,255,255)
+color_orange = (255,128,0)
+color_msgreen = (0,255,184)
+color_gray = (148,148,148)
 
 SIDE_MENU_RECT = pygame.Rect(0, 10, 5, 115)
 
