@@ -222,6 +222,21 @@ pactl load-module module-bluetooth-discover
         sudo shutdown -r now
         ```
 
+### 数码屏样式
+目前数码屏有3种样式，在**WorkSpace/Clock/config.yaml**中的**user-interface.clock.style**里配置，值为1、2、3中的一个
+- 样式1:
+
+![](images/clock_style_1.png)
+
+- 样式2:
+
+![](images/clock_style_2.png)
+
+- 样式3 (感谢 **Geno [格诺]** 的PR):
+
+![](images/clock_style_3.png)
+
+
 #### 操作方式
 1. GPIO按钮操作
    1. 按一下松开，界面上元素循环显示，不同界面，有不同反应
