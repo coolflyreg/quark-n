@@ -48,6 +48,7 @@ class ClockUI(BaseUI):
     memInfo = get_mem_info()
     dskInfo = get_disk_info()
     hostIp = get_host_ip()
+    battery_info = None
 
     animation_values = {}
     
@@ -184,7 +185,7 @@ class ClockUI(BaseUI):
                 surface.fill(fill_color, (0 if right == False else (window_width - width), window_height - y, width, indicator_line_height))
 
     def drawBatteryInfo(self, surface, x, y, width):
-        battery_info = get_battery_info()
+        battery_info = self.battery_info
         if battery_info is None:
             # logger.warn('no battery info')
             return
@@ -287,6 +288,7 @@ class ClockUI(BaseUI):
             self.lastCpuInfo = cpuInfo
 
             self.hide_second_symbol = not self.hide_second_symbol
+            self.battery_info = get_battery_info()
 
         cpuUse = str(self.cpuUse)
         memInfo = self.memInfo
