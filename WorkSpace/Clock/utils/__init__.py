@@ -1,4 +1,4 @@
-
+import os
 import _thread
 import threading
 import time
@@ -58,3 +58,11 @@ def clampPercent(input_value, min_value, max_value):
         return 100
     value_range = max_value - min_value
     return (input_value - min_value) / value_range * 100
+
+def getContent(filepath):
+    if not os.path.exists(filepath) or not os.path.isfile(filepath):
+        return None
+    with open(filepath, 'r') as f:
+        content = f.read()
+        f.close()
+    return content

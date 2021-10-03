@@ -6,7 +6,7 @@ import time
 import re
 import json
 import socket
-from utils import clampPercent
+from utils import clampPercent, getContent
 
 def cputempf():
     f = open("/sys/class/thermal/thermal_zone0/temp")
@@ -161,23 +161,46 @@ def get_disk_info():
     return disk_info
 
 
+# def get_battery_info():
+    # battery_filepath = '/var/battery/info.json'
+    # if os.path.exists(battery_filepath):
+    #     try:
+    #         f = open(battery_filepath, 'r')
+    #         content = f.read()
+    #         f.close()
+    #         jsonObj = json.loads(content)
+    #         vbat = float(jsonObj['vbat'])
+    #         vout = float(jsonObj['vout'])
+    #         chgr_current = float(jsonObj['chgr_current'])
+    #         out_current = float(jsonObj['out_current'])
+    #         return {
+    #             'percent': clampPercent(vbat, 3.0, (3.72 if chgr_current == 0 else 4.2)),
+    #             'in_charge': (chgr_current > 0)
+    #         }
+    #     except:
+    #         # print (e)
+    #         return None
+
 def get_battery_info():
-    battery_filepath = '/var/battery/info.json'
-    if os.path.exists(battery_filepath):
-        try:
-            f = open(battery_filepath, 'r')
-            content = f.read()
-            f.close()
-            jsonObj = json.loads(content)
-            vbat = float(jsonObj['vbat'])
-            vout = float(jsonObj['vout'])
-            chgr_current = float(jsonObj['chgr_current'])
-            out_current = float(jsonObj['out_current'])
-            return {
-                'percent': clampPercent(vbat, 3.0, (3.72 if chgr_current == 0 else 4.2)),
-                'in_charge': (chgr_current > 0)
-            }
-        except:
-            # print (e)
-            return None
+    power_supply_path = '/sys/class/power_supply/'
+    one_battery_path = None
+    if os.path.exists(power_supply_path) and os.path.isdir(power_supply_path) is True:
+        bat_paths = os.listdir(power_supply_path)
+        for bat_path in bat_paths:
+            dev_type = getContent('{}{}/type'.format(power_supply_path, bat_path))
+            if dev_type == None:
+                continue
+            if dev_type == 'Battery' or dev_type == 'Battery\n':
+                one_battery_path = '{}{}/'.format(power_supply_path, bat_path)
+
+    if one_battery_path is not None:
+        voltage_now = int(getContent('{}{}'.format(one_battery_path, 'voltage_now')))
+        current_now = int(getContent('{}{}'.format(one_battery_path, 'current_now')))
+
+        return {
+            'percent': clampPercent(voltage_now / 1000000, 3.0, (3.72 if current_now > 0 else 4.2)),
+            'in_charge': (current_now <= 0)
+        }
+        pass
+
     return None
