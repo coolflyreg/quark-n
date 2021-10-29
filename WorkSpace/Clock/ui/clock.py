@@ -658,7 +658,7 @@ class SolarSystem:
     refSpeed = 90  # 参考天数，用于计算运行速度比例
     num = 0
     tmpImg = None
-    showInfoIndex = 0
+    showInfoIndex = 2
     remainHideHighLightSeconds = 0
     plantNames = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
     hostIp = None
@@ -680,6 +680,9 @@ class SolarSystem:
         self.hostIp = get_host_ip()
         if (self.remainHideHighLightSeconds - 1) >= 0:
             self.remainHideHighLightSeconds -= 1
+        if self.remainHideHighLightSeconds == 0:
+            self.remainHideHighLightSeconds = 20
+            self.click()
         
         # logger.info('tickSecond {}'.format(self.remainHideHighLightSeconds))
 
@@ -689,7 +692,7 @@ class SolarSystem:
     def click(self):
         if self.remainHideHighLightSeconds == 0:
             self.showInfoIndex = -1
-        self.remainHideHighLightSeconds = 10
+        self.remainHideHighLightSeconds = 20
         self.showInfoIndex += 1
         if (self.showInfoIndex >= 9):
             self.showInfoIndex = 0
@@ -743,29 +746,29 @@ class SolarSystem:
 
         text_top = window_height - 70
         # 行星名称 和图片
-        if self.remainHideHighLightSeconds > 0:
-            plantName = self.plantNames[self.showInfoIndex]
-            if plantName == 'Sun':
-                # self.sunImg.render(surface, (int(window_width/2-self.sunImg.get_width()/2), int(window_height/2-self.sunImg.get_height()/2)))
-                self.sunImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
-                
-            elif plantName == 'Earth':
-                self.earthImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
-                
-            elif plantName == 'Saturn':
-                plantImg = self.getPlantImg(plantName.lower())
-                plantImg = pygame.transform.scale(plantImg, ((window_width - 135) * 2, window_width - 135))
-                surface.blit(plantImg, (window_width - int(plantImg.get_width() * 2 / 3 ), 0))
-            else:
-                plantImg = self.getPlantImg(plantName.lower())
-                plantImg = pygame.transform.scale(plantImg, (window_width - 135, window_width - 135))
-                surface.blit(plantImg, (window_width - plantImg.get_width(), 30))
+        # if self.remainHideHighLightSeconds > 0:
+        plantName = self.plantNames[self.showInfoIndex]
+        if plantName == 'Sun':
+            # self.sunImg.render(surface, (int(window_width/2-self.sunImg.get_width()/2), int(window_height/2-self.sunImg.get_height()/2)))
+            self.sunImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
+            
+        elif plantName == 'Earth':
+            self.earthImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
+            
+        elif plantName == 'Saturn':
+            plantImg = self.getPlantImg(plantName.lower())
+            plantImg = pygame.transform.scale(plantImg, ((window_width - 135) * 2, window_width - 135))
+            surface.blit(plantImg, (window_width - int(plantImg.get_width() * 2 / 3 ), 0))
+        else:
+            plantImg = self.getPlantImg(plantName.lower())
+            plantImg = pygame.transform.scale(plantImg, (window_width - 135, window_width - 135))
+            surface.blit(plantImg, (window_width - plantImg.get_width(), 30))
 
-            plantNameTxt = self.getTextDrawObj(plantName, 24, fontName = 'fzpx24')
-            surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
-        else: 
-            plantNameTxt = self.getTextDrawObj('Solar', 24, fontName = 'fzpx24')
-            surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
+        plantNameTxt = self.getTextDrawObj(plantName, 24, fontName = 'fzpx24')
+        surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
+        # else: 
+        #     plantNameTxt = self.getTextDrawObj('Solar', 24, fontName = 'fzpx24')
+        #     surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
 
 
         cPoint = (70, int(window_height / 2))
