@@ -663,6 +663,7 @@ class SolarSystem:
     plantNames = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
     hostIp = None
     sunImg = None
+    earthImg = None
 
     def __init__(self):
 
@@ -672,6 +673,7 @@ class SolarSystem:
 
         self.tmpImg = None # self.getImg("6")
         self.sunImg = GIFImage(os.path.join(sys.path[0], 'images/SolarSystem/sun.gif'))
+        self.earthImg = GIFImage(os.path.join(sys.path[0], 'images/SolarSystem/earth.gif'))
         pass
 
     def tickSecond(self):
@@ -729,7 +731,7 @@ class SolarSystem:
         windowSize = UIManager().getWindowSize()
         window_width = windowSize[0]
         window_height = windowSize[1]
-        surface.fill(color_white)
+        surface.fill(color_black)
 
         self.num = self.num + 1
         if self.num >= 3600000:
@@ -739,21 +741,25 @@ class SolarSystem:
 
         pygame.draw.rect(surface, color_black, (0, 0, window_width, window_height), 150)
 
+        text_top = window_height - 70
         # 行星名称 和图片
         if self.remainHideHighLightSeconds > 0:
             plantName = self.plantNames[self.showInfoIndex]
             if plantName == 'Sun':
                 # self.sunImg.render(surface, (int(window_width/2-self.sunImg.get_width()/2), int(window_height/2-self.sunImg.get_height()/2)))
-                self.sunImg.render(surface, (135, 20), size = (240 - 135, 240 - 135 - 10))
+                self.sunImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
+                
+            elif plantName == 'Earth':
+                self.earthImg.render(surface, (window_width - (window_width - 135), 20), size = (window_width - 135, window_width - 135 - 10))
                 
             elif plantName == 'Saturn':
                 plantImg = self.getPlantImg(plantName.lower())
-                plantImg = pygame.transform.scale(plantImg, ((240 - 135) * 2, 240 - 135))
-                surface.blit(plantImg, (75, 0))
+                plantImg = pygame.transform.scale(plantImg, ((window_width - 135) * 2, window_width - 135))
+                surface.blit(plantImg, (window_width - int(plantImg.get_width() * 2 / 3 ), 0))
             else:
                 plantImg = self.getPlantImg(plantName.lower())
-                plantImg = pygame.transform.scale(plantImg, (240 - 135, 240 - 135))
-                surface.blit(plantImg, (135, 30))
+                plantImg = pygame.transform.scale(plantImg, (window_width - 135, window_width - 135))
+                surface.blit(plantImg, (window_width - plantImg.get_width(), 30))
 
             plantNameTxt = self.getTextDrawObj(plantName, 24, fontName = 'fzpx24')
             surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
@@ -762,7 +768,7 @@ class SolarSystem:
             surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
 
 
-        cPoint = (70, 66)
+        cPoint = (70, int(window_height / 2))
         LineColor = (80, 80, 120)
 
         # circle
@@ -781,8 +787,8 @@ class SolarSystem:
             # 位置
             r = 5 + i * 7  # 半径
             rad = (self.starPostion[i - 1] + self.num * self.refSpeed / self.starSpeed[i - 1]) * math.pi / 180  # 旋转到90度
-            dx = int(70 + r * math.cos(rad))
-            dy = int(66 + r * math.sin(rad))
+            dx = int(cPoint[0] + r * math.cos(rad))
+            dy = int(cPoint[1] + r * math.sin(rad))
             # size
             p = 3
             if i == 5 or i == 6:
@@ -800,24 +806,24 @@ class SolarSystem:
 
         # 时间
         tmpDate = time.localtime()
-        self.drawText(time.strftime("%H:%M", tmpDate), 135, 65, 40)
+        self.drawText(time.strftime("%H:%M", tmpDate), window_width - 105, window_height - 70, 40)
         # self.drawText('88:88', 135, 65, 40)
 
-        self.drawText(time.strftime("%S", tmpDate), 217, 80, 20)
+        self.drawText(time.strftime("%S", tmpDate), window_width - 23, window_height - 55, 20)
         # self.drawText('88', 212, 88)
 
         # 日期
-        self.drawText(time.strftime("%Y-%m-%d", tmpDate), 135, 100, 18)
+        self.drawText(time.strftime("%Y-%m-%d", tmpDate), window_width - 105, window_height - 35, 18)
         # self.drawText('8888-88-88', 135, 105, 13)
         # # 周
-        self.drawText(self.weekConvert(datetime.now().weekday()), 140, 50, 20)
+        self.drawText(self.weekConvert(datetime.now().weekday()), window_width - 100, window_height - 85, 20)
 
         if self.hostIp is not None:
             ipTxt = self.getTextDrawObj(self.hostIp, 20)
             left = window_width - ipTxt.get_width() - 2
-            if left > 135:
-                left = 135
-            surface.blit(ipTxt, (left, 118))
+            if left > (window_width - 100):
+                left = window_width - 100
+            surface.blit(ipTxt, (left, window_height - 17))
 
         # 随机产生其他图片
         if tmpDate.tm_sec == 0:
