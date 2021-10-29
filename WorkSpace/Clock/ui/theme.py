@@ -24,7 +24,7 @@ class FontObj:
 
     def __init__(self, size, fontName, fontPath):
         self.size = size
-        self.fontName = ''
+        self.fontName = fontName
         self.fontPath = fontPath
         self.font = pygame.font.Font(fontPath, self.size)
         pass
@@ -32,9 +32,11 @@ class FontObj:
 
 def getAppFont(size, fontName):
     for f in _FontCache:
+        # print('finding font %d-%s => %d-%s' % (f.size, f.fontName, size, fontName))
         if ("%d-%s" % (f.size, f.fontName)) == ("%d-%s" % (size, fontName)):
             return f.font
     
+    print('create new font')
     newFont = FontObj(size, fontName, _FontNames[fontName])
     _FontCache.append(newFont)
     return newFont.font
