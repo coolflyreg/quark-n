@@ -223,7 +223,7 @@ pactl load-module module-bluetooth-discover
         ```
 
 ### 数码屏样式
-目前数码屏有3种样式，在**WorkSpace/Clock/config.yaml**中的**user-interface.clock.style**里配置，值为1、2、3中的一个
+目前数码屏有4种样式，在**WorkSpace/Clock/config.yaml**中的**user-interface.clock.style**里配置，值为1、2、3、4中的一个
 - 样式1:
 
 ![](images/clock_style_1.png)
@@ -236,6 +236,9 @@ pactl load-module module-bluetooth-discover
 
 ![](images/clock_style_3.png)
 
+- 样式4 (感谢**墨云**提供的行星运行基础程序)
+
+![](images/clock_style_4.png)
 
 #### 操作方式
 1. GPIO按钮操作

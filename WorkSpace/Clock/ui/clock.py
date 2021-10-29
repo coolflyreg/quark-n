@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
+import sys
+import os
+import math
+import random
 from datetime import datetime
 import logging
 import logging.config
@@ -10,6 +14,8 @@ from ui.theme import *
 from utils.stepper import Stepper
 from utils.sysinfo import *
 from utils import runAsync, clampPercent
+from utils.GIFImage import GIFImage
+
 
 logger = logging.getLogger('ui.clock')
 
@@ -48,7 +54,6 @@ class ClockUI(BaseUI):
     memInfo = get_mem_info()
     dskInfo = get_disk_info()
     hostIp = get_host_ip()
-    battery_info = None
 
     animation_values = {}
     
@@ -60,6 +65,8 @@ class ClockUI(BaseUI):
     'June', 'July', 'August', 'September', 'October', 'November', 'December']
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
     # days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日' ]
+
+    solarSystem = None
 
     def getAnimationValue(self, key, currentValue, stepValue):
         if self.animation_values.__contains__(key):
@@ -90,7 +97,7 @@ class ClockUI(BaseUI):
     def on_shown(self):
         # if int(Config().get('user-interface.clock.style')) is not None:
         style = int(Config().get('user-interface.clock.style', 2))
-        if style < 1 or style > 3:
+        if style < 1 or style > 4:
             self.ui_style = 1
         else:
             self.ui_style = style
@@ -103,6 +110,10 @@ class ClockUI(BaseUI):
         self.rx()
         self.tx()
         self.lastCpuInfo = readCpuInfo()
+
+        if self.ui_style == 4 and self.solarSystem is None:
+            self.solarSystem = SolarSystem()
+
         pass
 
     def on_hidden(self):
@@ -110,30 +121,39 @@ class ClockUI(BaseUI):
 
     def onKeyRelease(self, isLongPress, pushCount, longPressSeconds, keyIndex):
         if not isLongPress and pushCount == 1:
-            self.sysInfoShowType.next()
-            self.timeShowType.next()
-            self.dateShowType.next()
-            self.netShowType.next()
+            if (self.ui_style == 4):
+                self.solarSystem.click()
+            else:
+                self.sysInfoShowType.next()
+                self.timeShowType.next()
+                self.dateShowType.next()
+                self.netShowType.next()
 
     def onMouseDown(self, event):
-        if self.sysInfoRect.collidepoint(pygame.mouse.get_pos()):
-            self.sysInfoShowType.next()
-        elif self.timeRect.collidepoint(pygame.mouse.get_pos()):
-            self.timeShowType.next()
-        elif self.dateRect.collidepoint(pygame.mouse.get_pos()):
-            self.dateShowType.next()
-        elif self.netRect.collidepoint(pygame.mouse.get_pos()):
-            self.netShowType.next()
+        if (self.ui_style == 4):
+            self.solarSystem.click()
+        else:
+            if self.sysInfoRect.collidepoint(pygame.mouse.get_pos()):
+                self.sysInfoShowType.next()
+            elif self.timeRect.collidepoint(pygame.mouse.get_pos()):
+                self.timeShowType.next()
+            elif self.dateRect.collidepoint(pygame.mouse.get_pos()):
+                self.dateShowType.next()
+            elif self.netRect.collidepoint(pygame.mouse.get_pos()):
+                self.netShowType.next()
     
     def onTouchEnd(self, event):
-        if self.sysInfoRect.collidepoint(event):
-            self.sysInfoShowType.next()
-        elif self.timeRect.collidepoint(event):
-            self.timeShowType.next()
-        elif self.dateRect.collidepoint(event):
-            self.dateShowType.next()
-        elif self.netRect.collidepoint(event):
-            self.netShowType.next()
+        if (self.ui_style == 4):
+            self.solarSystem.click()
+        else:
+            if self.sysInfoRect.collidepoint(event):
+                self.sysInfoShowType.next()
+            elif self.timeRect.collidepoint(event):
+                self.timeShowType.next()
+            elif self.dateRect.collidepoint(event):
+                self.dateShowType.next()
+            elif self.netRect.collidepoint(event):
+                self.netShowType.next()
         pass
 
     def drawMeterIndicator(self, surface, percentValue, right = False):
@@ -185,7 +205,7 @@ class ClockUI(BaseUI):
                 surface.fill(fill_color, (0 if right == False else (window_width - width), window_height - y, width, indicator_line_height))
 
     def drawBatteryInfo(self, surface, x, y, width):
-        battery_info = self.battery_info
+        battery_info = get_battery_info()
         if battery_info is None:
             # logger.warn('no battery info')
             return
@@ -235,6 +255,8 @@ class ClockUI(BaseUI):
             self.update_style_2(surface)
         if self.ui_style == 3:
             self.update_style_3(surface)
+        if self.ui_style == 4:
+            self.update_style_4(surface)
 
     def update_style_2(self, surface = None):
         surface = UIManager().getSurface()
@@ -288,7 +310,6 @@ class ClockUI(BaseUI):
             self.lastCpuInfo = cpuInfo
 
             self.hide_second_symbol = not self.hide_second_symbol
-            self.battery_info = get_battery_info()
 
         cpuUse = str(self.cpuUse)
         memInfo = self.memInfo
@@ -611,6 +632,205 @@ class ClockUI(BaseUI):
         # pygame.draw.rect(surface, (255,255,255), self.timeRect, 1)
         # pygame.draw.rect(surface, (255,255,255), self.dateRect, 1)
         # pygame.draw.rect(surface, (255,255,255), self.netRect, 1)
+        pass
+
+    def update_style_4(self, surface = None):
+        now = datetime.now()
+
+        second = now.strftime('%S')
+        secondIntValue = int(second)
+
+        self.solarSystem.update(surface)
+
+        if self.prevSecondIntValue != secondIntValue:
+            self.solarSystem.tickSecond()
+        self.prevSecondIntValue = secondIntValue
+        pass
+
+    pass
+
+
+class SolarSystem:
+    
+    BorderPad = 15
+    starPostion = []  # 初始位置
+    starSpeed = [90, 225, 365, 686, 4015, 10585, 30660, 59860, 30]  # 各个运行一周星球天数
+    refSpeed = 90  # 参考天数，用于计算运行速度比例
+    num = 0
+    tmpImg = None
+    showInfoIndex = 0
+    remainHideHighLightSeconds = 0
+    plantNames = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+    hostIp = None
+    sunImg = None
+
+    def __init__(self):
+
+        # 随机初始化星球输出位置
+        for i in range(1, 10):
+            self.starPostion.append(random.randint(0, 360))
+
+        self.tmpImg = None # self.getImg("6")
+        self.sunImg = GIFImage(os.path.join(sys.path[0], 'images/SolarSystem/sun.gif'))
+        pass
+
+    def tickSecond(self):
+        self.hostIp = get_host_ip()
+        if (self.remainHideHighLightSeconds - 1) >= 0:
+            self.remainHideHighLightSeconds -= 1
+        
+        # logger.info('tickSecond {}'.format(self.remainHideHighLightSeconds))
+
+    def isShowLine(self, index):
+        return self.showInfoIndex == index and self.remainHideHighLightSeconds > 0
+
+    def click(self):
+        if self.remainHideHighLightSeconds == 0:
+            self.showInfoIndex = -1
+        self.remainHideHighLightSeconds = 10
+        self.showInfoIndex += 1
+        if (self.showInfoIndex >= 9):
+            self.showInfoIndex = 0
+
+    def drawText(self, text, posx, posy, textHeight=14, fontName="DIGIT", fontColor=(255, 255, 255),
+                 backgroudColor=None):
+        # ttf_abs = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'font', fontName)
+        # fontObj = pygame.font.Font(ttf_abs, textHeight)  # 通过字体文件获得字体对象
+        # textSurfaceObj = fontObj.render(text, True, fontColor, backgroudColor)  # 配置要显示的文字
+
+        # textRectObj = textSurfaceObj.get_rect()  # 获得要显示的对象的rect
+        # textRectObj.center = (posx, posy)  # 设置显示对象的坐标
+
+        textSurfaceObj = getAppFont(textHeight, fontName).render(text, True, fontColor, backgroudColor)
+        
+        surface = UIManager().getSurface()
+        surface.blit(textSurfaceObj, (posx, posy))  # 绘制字
+
+    def getTextDrawObj(self, text, textHeight=14, fontName="DIGIT", fontColor=(255, 255, 255), backgroudColor=None):
+        return getAppFont(textHeight, fontName).render(text, True, fontColor, backgroudColor)
+
+    def weekConvert(self, idx):
+        arry = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        return arry[idx]
+
+    def getImg(self, img_name):
+        
+        img = pygame.image.load(
+            os.path.join(sys.path[0], 'images/SolarSystem', img_name + '.png')).convert()
+        return img
+
+    def getPlantImg(self, img_name):
+        img = pygame.image.load(
+            os.path.join(sys.path[0], 'images/SolarSystem', img_name + '.jpg')).convert()
+        return img
+
+    def update(self, surface):
+        surface = UIManager().getSurface()
+        windowSize = UIManager().getWindowSize()
+        window_width = windowSize[0]
+        window_height = windowSize[1]
+        surface.fill(color_white)
+
+        self.num = self.num + 1
+        if self.num >= 3600000:
+            self.num = 0
+
+        # drawing
+
+        pygame.draw.rect(surface, color_black, (0, 0, window_width, window_height), 150)
+
+        # 行星名称 和图片
+        if self.remainHideHighLightSeconds > 0:
+            plantName = self.plantNames[self.showInfoIndex]
+            if plantName == 'Sun':
+                # self.sunImg.render(surface, (int(window_width/2-self.sunImg.get_width()/2), int(window_height/2-self.sunImg.get_height()/2)))
+                self.sunImg.render(surface, (135, 20), size = (240 - 135, 240 - 135 - 10))
+                
+            elif plantName == 'Saturn':
+                plantImg = self.getPlantImg(plantName.lower())
+                plantImg = pygame.transform.scale(plantImg, ((240 - 135) * 2, 240 - 135))
+                surface.blit(plantImg, (75, 0))
+            else:
+                plantImg = self.getPlantImg(plantName.lower())
+                plantImg = pygame.transform.scale(plantImg, (240 - 135, 240 - 135))
+                surface.blit(plantImg, (135, 30))
+
+            plantNameTxt = self.getTextDrawObj(plantName, 24, fontName = 'fzpx24')
+            surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
+        else: 
+            plantNameTxt = self.getTextDrawObj('Solar', 24, fontName = 'fzpx24')
+            surface.blit(plantNameTxt, (window_width - plantNameTxt.get_width() - 10, 2))
+
+
+        cPoint = (70, 66)
+        LineColor = (80, 80, 120)
+
+        # circle
+        for i in range(1, 9):
+            pygame.draw.circle(surface, color_cyan if self.isShowLine(i) else LineColor, cPoint, 5 + i * 7, 1)
+
+        # sun
+        pygame.draw.circle(surface, (255, 255, 0), cPoint, 6, 6)
+        for i in range(1, 9):
+            # 颜色
+            tagColor = ((i / 10) * 255, ((10 - i) / 10) * 255, (i / 10) * 255)
+            if i == 3:
+                tagColor = (0, 0, 255)
+            elif i == 4:
+                tagColor = (255, 0, 0)
+            # 位置
+            r = 5 + i * 7  # 半径
+            rad = (self.starPostion[i - 1] + self.num * self.refSpeed / self.starSpeed[i - 1]) * math.pi / 180  # 旋转到90度
+            dx = int(70 + r * math.cos(rad))
+            dy = int(66 + r * math.sin(rad))
+            # size
+            p = 3
+            if i == 5 or i == 6:
+                p = 4
+            pygame.draw.circle(surface, tagColor, (dx, dy), p, p)
+            # 绘制月亮
+            if i == 3:
+                # pygame.draw.circle(surface, (70, 70, 70), (dx, dy), 5, 1)
+                moon_rad = (self.starPostion[8] + self.num * self.refSpeed / self.starSpeed[
+                    8]) * math.pi / 180  # 旋转到90度
+                moon_dx = int(dx + 5 * math.cos(moon_rad))
+                moon_dy = int(dy + 5 * math.sin(moon_rad))
+                pygame.draw.circle(surface, (255, 255, 255), (moon_dx, moon_dy), 1, 1)
+
+
+        # 时间
+        tmpDate = time.localtime()
+        self.drawText(time.strftime("%H:%M", tmpDate), 135, 65, 40)
+        # self.drawText('88:88', 135, 65, 40)
+
+        self.drawText(time.strftime("%S", tmpDate), 217, 80, 20)
+        # self.drawText('88', 212, 88)
+
+        # 日期
+        self.drawText(time.strftime("%Y-%m-%d", tmpDate), 135, 100, 18)
+        # self.drawText('8888-88-88', 135, 105, 13)
+        # # 周
+        self.drawText(self.weekConvert(datetime.now().weekday()), 140, 50, 20)
+
+        if self.hostIp is not None:
+            ipTxt = self.getTextDrawObj(self.hostIp, 20)
+            left = window_width - ipTxt.get_width() - 2
+            if left > 135:
+                left = 135
+            surface.blit(ipTxt, (left, 118))
+
+        # 随机产生其他图片
+        if tmpDate.tm_sec == 0:
+            imgRd = random.randint(1, 50) ## 这里通过控制随机数量，就可以控制事件图片随机概率
+            if imgRd < 6:
+                self.tmpImg = self.getImg(str(imgRd))
+            else:
+                # self.tmpImg = self.getImg(str("6"))
+                self.tmpImg = None
+                pass
+
+        if tmpDate.tm_sec != 0 and self.tmpImg is not None: # 这里在0秒的时候不绘制，主要是防止期间多次选择图片呈现异常
+            surface.blit(self.tmpImg, (180, 40))
         pass
 
     pass

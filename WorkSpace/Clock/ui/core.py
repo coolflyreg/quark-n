@@ -104,18 +104,19 @@ class UIManager(metaclass=Singleton):
         ###
         ### DEBUG FOR UI ELEMENT POSITION
         ###
-        # pygame.draw.lines(self.surface, (255,255,255), True, 
-        #     [(0, 0), 
-        #      (self.window_size[0] - 1, 0), 
-        #      (self.window_size[0] - 1, self.window_size[1] - 1), 
-        #      (0, self.window_size[1] - 1)], 1)
-        # for x in range(0, self.window_size[0], 10):
-        #     pygame.draw.line(self.surface, (255,255,255), (x, 0), (x, (5 if x % 50 != 0 else 10)), 1)
-        #     pygame.draw.line(self.surface, (255,255,255), (x, self.window_size[1] - 1), (x, self.window_size[1] - (6 if x % 50 != 0 else 11)), 1)
-        #     for y in range(0, self.window_size[1], 10):
-        #         if x == 0:
-        #             pygame.draw.line(self.surface, (255,255,255), (x,y), (x + (5 if y % 50 != 0 else 10), y), 1)
-        #             pygame.draw.line(self.surface, (255,255,255), (self.window_size[0] - 1,y), (self.window_size[0] - (6 if y % 50 != 0 else 11), y), 1)
+        if 1 == int(Config().get('user-interface.debug.rule', 0)):
+            pygame.draw.lines(self.surface, (255,255,255), True, 
+                [(0, 0), 
+                (self.window_size[0] - 1, 0), 
+                (self.window_size[0] - 1, self.window_size[1] - 1), 
+                (0, self.window_size[1] - 1)], 1)
+            for x in range(0, self.window_size[0], 10):
+                pygame.draw.line(self.surface, (255,255,255), (x, 0), (x, (5 if x % 50 != 0 else 10)), 1)
+                pygame.draw.line(self.surface, (255,255,255), (x, self.window_size[1] - 1), (x, self.window_size[1] - (6 if x % 50 != 0 else 11)), 1)
+                for y in range(0, self.window_size[1], 10):
+                    if x == 0:
+                        pygame.draw.line(self.surface, (255,255,255), (x,y), (x + (5 if y % 50 != 0 else 10), y), 1)
+                        pygame.draw.line(self.surface, (255,255,255), (self.window_size[0] - 1,y), (self.window_size[0] - (6 if y % 50 != 0 else 11), y), 1)
 
         for ui_name in self.__ui_dict:
             if self.__ui_dict[ui_name] is not self._current():

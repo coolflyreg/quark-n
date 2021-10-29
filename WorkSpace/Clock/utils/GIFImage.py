@@ -137,7 +137,7 @@ class GIFImage(object):
 		except EOFError:
 			pass
 
-	def render(self, screen, pos):
+	def render(self, screen, pos, size = None):
 		if self.running:
 			if time.time() - self.ptime > self.frames[self.cur][1]:
 				if self.reversed:
@@ -151,7 +151,10 @@ class GIFImage(object):
 
 				self.ptime = time.time()
 
-		screen.blit(self.frames[self.cur][0], pos)
+		if size is not None:
+			screen.blit(pygame.transform.scale(self.frames[self.cur][0], size), pos)
+		else:
+			screen.blit(self.frames[self.cur][0], pos)
 
 	def seek(self, num):
 		self.cur = num

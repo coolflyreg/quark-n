@@ -11,7 +11,9 @@ _FontNames = {
     'PingFang': "fonts/PingFang.ttc",
     'DIGITAL': "fonts/DIGITAL.TTF",
     'SCORE': "fonts/SCOREBOARD.TTF",
-    'PROTFB' : "fonts/PRO-TFB.TTF"
+    'PROTFB' : "fonts/PRO-TFB.TTF",
+    'fzpx12' : "fonts/fzpx12.TTF",
+    'fzpx24' : "fonts/fzpx24.TTF"
 }
 
 class FontObj:

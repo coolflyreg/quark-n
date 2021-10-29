@@ -54,7 +54,7 @@ robot:
 # 界面设置
 user-interface:
   clock:
-    style: 3
+    style: 4
   mpu-motion: false
   # 启动图设置
   launcher:
@@ -68,3 +68,5 @@ user-interface:
   # 不要改动
   manager:
     class: display.ui.core.UIManager
+  debug:
+    rule: 0
