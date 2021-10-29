@@ -36,7 +36,7 @@ def getAppFont(size, fontName):
         if ("%d-%s" % (f.size, f.fontName)) == ("%d-%s" % (size, fontName)):
             return f.font
     
-    print('create new font')
+    # print('create new font')
     newFont = FontObj(size, fontName, _FontNames[fontName])
     _FontCache.append(newFont)
     return newFont.font
